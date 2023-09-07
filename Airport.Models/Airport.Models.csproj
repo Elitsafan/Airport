@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Entities\DepartureReport.cs" />
+    <Compile Remove="Entities\LandingReport.cs" />
+    <Compile Remove="Entities\RouteTrafficLight.cs" />
+    <Compile Remove="Interfaces\IDepartureRouteLogic.cs" />
+    <Compile Remove="Interfaces\ILandingRouteLogic.cs" />
+    <Compile Remove="Interfaces\IRouteService.cs" />
+    <Compile Remove="Interfaces\IRoutesProvider.cs" />
+    <Compile Remove="Interfaces\IStationService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.6.40" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+  </ItemGroup>
+
+</Project>

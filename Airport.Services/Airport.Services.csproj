@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DepartureRouteLogic.cs" />
+    <Compile Remove="FlightLogic.cs" />
+    <Compile Remove="Helpers\IStationLogicExtensions.cs" />
+    <Compile Remove="LandingRouteLogic.cs" />
+    <Compile Remove="Logics\DepartureLogic.cs" />
+    <Compile Remove="Logics\LandingLogic.cs" />
+    <Compile Remove="Mappers\RouteExtensions.cs" />
+    <Compile Remove="RouteService.cs" />
+    <Compile Remove="RoutesProvider.cs" />
+    <Compile Remove="StationService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Airport.Data\Airport.Data.csproj" />
+    <ProjectReference Include="..\Airport.Models\Airport.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.1.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+  </ItemGroup>
+  
+</Project>

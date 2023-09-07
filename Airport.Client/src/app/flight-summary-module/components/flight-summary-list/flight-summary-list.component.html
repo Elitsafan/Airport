@@ -1,0 +1,29 @@
+
+<table *ngIf="(flights$ | async)?.length; else nothingToDisplay" class="table table-primary table-striped table-bordered border-primary">
+  <thead>
+    <tr>
+      <th scope="col">Flight ID</th>
+      <th scope="col">Type</th>
+      <th scope="col">Stations Times</th>
+    </tr>
+  </thead>
+  <tbody>
+    <ng-container *ngFor="let flight of flights$ | async; trackBy: trackByFlightId">
+      <tr flight-summary [flight]="flight"></tr>
+    </ng-container>
+  </tbody>
+  <tfoot>
+    <tr>
+      <th colspan="2">Total Flights: <span class="badge bg-secondary text-bg-body">{{(flights$ | async)?.length}}</span></th>
+      <th colspan="2">
+        Departures: <span class="badge bg-secondary text-bg-body">
+          {{(flights$ | async)?.filter(filterFlightType('Departure'))?.length}}
+        </span>
+        Landings: <span class="badge bg-secondary text-bg-body">{{(flights$ | async)?.filter(filterFlightType('Landing'))?.length}}</span>
+      </th>
+    </tr>
+  </tfoot>
+</table>
+<ng-template #nothingToDisplay>
+  <h4 class="d-flex justify-content-center align-items-center">No flights to display.</h4>
+</ng-template>

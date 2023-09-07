@@ -1,0 +1,12 @@
+﻿namespace Airport.Models.Interfaces
+{
+    public interface ITrafficLightLogicProvider
+    {
+        /// <summary>
+        /// Finds all the <see cref="ITrafficLightLogic"/> that associates with the <paramref name="routeId"/>
+        /// </summary>
+        /// <param name="routeId"></param>
+        /// <returns></returns>
+        IEnumerable<ITrafficLightLogic> FindByRouteId(int routeId);
+    }
+}

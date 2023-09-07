@@ -1,0 +1,17 @@
+@import "bootstrap-overrides";
+@import "../../node_modules/bootstrap/scss/_functions.scss";
+@import "../../node_modules/bootstrap/scss/_variables.scss";
+@import "../../node_modules/bootstrap/scss/_mixins.scss";
+@import "../../node_modules/bootstrap/scss/_dropdown.scss";
+
+//
+$custom-colors: (
+    "custom-yellow": $custom-yellow,
+    "custom-light": $custom-light,
+    "custom-danger": $custom-danger
+);
+
+// Merge the maps
+$theme-colors: map-merge($theme-colors, $custom-colors);
+
+@import "../../node_modules/bootstrap/scss/bootstrap.scss";

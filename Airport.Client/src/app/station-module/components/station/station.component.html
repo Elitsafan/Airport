@@ -1,0 +1,7 @@
+<div class="card border border-2 border-secondary" *ngIf="station">
+  <i class="bi bi-airplane text-center" [ngClass]="!station.flight ? 'bg-body' : station.flight.color" [style]="{'font-size': '4rem'}"></i>
+  <div class="card-body bg-secondary text-custom-light p-1 fw-bold">
+    <h6 class="card-title text-center">Station No: {{station.stationId}}</h6>
+  </div>
+  <flight class="bg-custom-danger" [flight]="station.flight"></flight>
+</div>

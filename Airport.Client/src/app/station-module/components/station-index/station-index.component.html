@@ -1,0 +1,14 @@
+<div class="container">
+  <div class="d-flex flex-column align-items-center" *ngIf="(stations$ | async)?.length; else nothingToDisplay">
+    <div class="d-flex flex-row">
+      <station-list [stations]="(endStationsDeparture$ | async) ?? []"></station-list>
+      <station-list [stations]="(endStationsLanding$ | async)?.reverse()"></station-list>
+    </div>
+    <station-list [stations]="(commonStations$ | async)?.slice(0, -2)"></station-list>
+    <station-list [stations]="(middleStations$ | async) ?? []"></station-list>
+    <station-list [stations]="(commonStations$ | async)?.slice(1)"></station-list>
+  </div>
+</div>
+<ng-template #nothingToDisplay>
+  <h4 class="d-flex justify-content-center align-items-center">No stations to display.</h4>
+</ng-template>

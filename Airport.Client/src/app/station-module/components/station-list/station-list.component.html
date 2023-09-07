@@ -1,0 +1,5 @@
+<div class="d-flex flex-row" *ngIf="stations?.length">
+  <ng-container *ngFor="let station of stations; index as i; trackBy: trackByStationId">
+    <station class="p-1" [station]="station"></station>
+  </ng-container>
+</div>
