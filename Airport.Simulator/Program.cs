@@ -44,7 +44,7 @@ namespace Airport.Simulator
             await Console.Out.WriteLineAsync(startResponse.StatusCode.ToString());
             await flightLauncherService.LaunchManyAsync(args); 
 #else
-            await flightLauncherService.SetFlightTimeoutAsync(TimeSpan.FromMilliseconds(501)/*, Models.Enums.FlightType.Departure*/);
+            await flightLauncherService.SetFlightTimeoutAsync(TimeSpan.FromMilliseconds(1101)/*, Models.Enums.FlightType.Departure*/);
 #endif
             await host.RunAsync();
         }

@@ -14,47 +14,47 @@ namespace Airport.Data.Configurations
                 new
                 {
                     StationId = 1,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
                 new
                 {
                     StationId = 2,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
                 new
                 {
                     StationId = 3,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
                 new
                 {
                     StationId = 4,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(900),
                 },
                 new
                 {
                     StationId = 5,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
                 new
                 {
                     StationId = 6,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(900),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(1200),
                 },
                 new
                 {
                     StationId = 7,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(900),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(1200),
                 },
                 new
                 {
                     StationId = 8,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(300),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
                 new
                 {
                     StationId = 9,
-                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(400),
+                    EstimatedWaitingTime = TimeSpan.FromMilliseconds(500),
                 });
         }
     }
