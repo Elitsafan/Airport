@@ -51,7 +51,7 @@ namespace Airport.Services.Logics
         #region Properties
         public int RouteId { get; }
         public Flight Flight => _flight;
-        public IStationLogic CurrentStation { get; private set; } = null!;
+        public IStationLogic? CurrentStation { get; private set; } = null;
         #endregion
 
         public async Task RunAsync()
@@ -59,9 +59,9 @@ namespace Airport.Services.Logics
             var releaser = await _routeLogic.StartRunAsync();
             try
             {
-                // Runs untill attempts to enter a null station
-                while (await TryEnterStationAsync(_routeLogic.GetNextStationsOf(CurrentStation)) is not null) ;
-                _ = ExitFromLastStationAsync();
+                var startStations = _routeLogic.GetStartStations();
+                if (startStations is not null && startStations.Any())
+                    await TryEnterStationAsync(startStations);
             }
             catch (Exception e)
             {
@@ -83,12 +83,6 @@ namespace Airport.Services.Logics
             }
             finally { releaser.Dispose(); }
         }
-        public async Task ExitCurrentStationAsync()
-        {
-            if (CurrentStation is null)
-                return;
-            await CurrentStation.TakeOutFlightAsync();
-        }
         public void Dispose()
         {
             _flightRepository.Dispose();
@@ -96,11 +90,8 @@ namespace Airport.Services.Logics
             _rightOfWay.Dispose();
         }
 
-        private async Task<IStationLogic?> TryEnterStationAsync(IEnumerable<IStationLogic> stations)
+        private async Task TryEnterStationAsync(IEnumerable<IStationLogic> stations)
         {
-            // if there are no stations, there is no entrance
-            if (!stations.Any())
-                return null;
             try
             {
                 bool isNewFlight = CurrentStation is null;
@@ -108,17 +99,32 @@ namespace Airport.Services.Logics
                 // No need the right of way anymore
                 _rightOfWay.Dispose();
                 if (isNewFlight)
+                {
                     // Opens the gate to the next flight
                     _newFlightGates[CurrentStation.StationId].Set();
+                }
+                // Waits 
+                await WaitOnStationAsync(CurrentStation.EstimatedWaitingTime);
+                var nextStations = _routeLogic.GetNextStationsOf(CurrentStation);
+                _ = nextStations.Any()
+                    ? TryEnterStationAsync(nextStations)
+                    : EndRunAsync();
             }
             catch (Exception e)
             {
                 _logger.LogError(e, null);
-                throw;
+                await Task.FromException(e);
             }
-            // Waits 
-            await WaitOnStationAsync(CurrentStation!.EstimatedWaitingTime);
-            return CurrentStation;
+        }
+
+        private async Task EndRunAsync()
+        {
+            // Exits from the last station
+            await CurrentStation!.ClearAsync();
+            await _flightRepository.UpdateFlightAsync(Flight);
+            await _flightRepository.SaveChangesAsync();
+            if (FlightRunDone is not null)
+                await FlightRunDone.InvokeAsync(this, new FlightRunDoneEventArgs(this));
         }
         // Saves the flight to database
         private async Task ReigsterFlightAsync(object? sender, StationChangedEventArgs args)
@@ -149,9 +155,7 @@ namespace Airport.Services.Logics
             }
             throw new Exception("Couldn't enter any of the stations");
         }
-        private async Task<IStationLogic> EnterStationAsync(
-            IStationLogic target,
-            CancellationTokenSource? cts)
+        private async Task<IStationLogic> EnterStationAsync(IStationLogic target, CancellationTokenSource? cts)
         {
             _rightOfWay = await _routeLogic.GetRightOfWayAsync(CurrentStation, target, cts is null ? default : cts.Token);
             // flight is a new one
@@ -175,18 +179,6 @@ namespace Airport.Services.Logics
                 _logger.LogError(e, null);
                 throw;
             }
-        }
-        private async Task ExitFromLastStationAsync()
-        {
-            try
-            {
-                await ExitCurrentStationAsync();
-                await _flightRepository.UpdateFlightAsync(Flight);
-                await _flightRepository.SaveChangesAsync();
-                if (FlightRunDone is not null)
-                    await FlightRunDone.InvokeAsync(this, new FlightRunDoneEventArgs(this));
-            }
-            catch (Exception e) { await Task.FromException(e); }
         }
         private Task WaitOnStationAsync(TimeSpan time) => Task.Delay(time);
     }

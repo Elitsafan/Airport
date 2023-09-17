@@ -18,7 +18,7 @@ namespace Airport.Models.Interfaces
         /// <summary>
         /// The current <see cref="IStationLogic"/> that holds the <see cref="Flight"/>
         /// </summary>
-        IStationLogic CurrentStation { get; }
+        IStationLogic? CurrentStation { get; }
         int RouteId { get; }
         [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         Task ThrowIfCancellationRequested(CancellationTokenSource? source);
@@ -26,10 +26,5 @@ namespace Airport.Models.Interfaces
         /// Runs the current instance
         /// </summary>
         Task RunAsync();
-        /// <summary>
-        /// Exits from the <see cref="CurrentStation"/>
-        /// </summary>
-        /// <returns></returns>
-        Task ExitCurrentStationAsync();
     }
 }

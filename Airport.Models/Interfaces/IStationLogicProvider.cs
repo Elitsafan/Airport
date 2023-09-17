@@ -11,7 +11,7 @@ namespace Airport.Models.Interfaces
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         Task<IEnumerable<IStationLogic>> FindByRouteId(int routeId);
-        IEnumerable<IStationLogic> GetAll();
+        IQueryable<IStationLogic> GetAll();
         IStationLogic? FindById(int id);
         IQueryable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate);
     }

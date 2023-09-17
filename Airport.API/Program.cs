@@ -56,8 +56,7 @@ namespace Airport.API
             builder.Services.AddSingleton<IRouteLogicFactory, RouteLogicFactory>();
             builder.Services.AddSingleton<IFlightLogicFactory, FlightLogicFactory>();
             builder.Services.AddSingleton<IFlightCreatorFactory, FlightCreatorFactory>();
-            builder.Services.AddSingleton<IStationLogicFactory, StationLogicFactory>(
-                serviceProvider => new StationLogicFactory(serviceProvider));
+            builder.Services.AddSingleton<IStationLogicFactory, StationLogicFactory>();
             builder.Services.AddSingleton<IDirectionLogicFactory, DirectionLogicFactory>();
             builder.Services.AddSingleton<ITrafficLightLogicFactory, TrafficLightLogicFactory>();
             builder.Services.AddSingleton<IRouteLogicProvider, RouteLogicProvider>();

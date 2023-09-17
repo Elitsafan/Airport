@@ -26,6 +26,6 @@ namespace Airport.Models.Interfaces
         /// Takes the flight out from the station
         /// </summary>
         /// <returns></returns>
-        Task TakeOutFlightAsync();
+        Task ClearAsync();
     }
 }

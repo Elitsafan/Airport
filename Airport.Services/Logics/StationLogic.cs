@@ -3,6 +3,7 @@ using Airport.Models.Enums;
 using Airport.Models.EventArgs;
 using Airport.Models.Interfaces;
 using Airport.Services.Helpers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Threading;
@@ -39,9 +40,7 @@ namespace Airport.Services.Logics
         public WaitHandle AvailableWaitHandle => _semaphore.AvailableWaitHandle;
         #endregion
 
-        public async Task<IStationLogic> SetFlightAsync(
-            IFlightLogic flightLogic,
-            CancellationTokenSource? source = null)
+        public async Task<IStationLogic> SetFlightAsync(IFlightLogic flightLogic, CancellationTokenSource? source = null)
         {
             await _semaphore.WaitAsync(source is null ? default : source.Token);
             try
@@ -50,7 +49,7 @@ namespace Airport.Services.Logics
                 _flightLogic = flightLogic;
                 //await Console.Out.WriteLineAsync($"{flightLogic.Flight.FlightId} | {flightLogic.Flight.ConvertToFlightType()} | {StationId}");
                 if (flightLogic.CurrentStation is not null)
-                    await flightLogic.ExitCurrentStationAsync();
+                    await flightLogic.CurrentStation.ClearAsync();
                 _station.Entrance = DateTime.Now;
                 using IStationRepository stationRepository = await UpdateStationAsync();
                 await RaiseStationChangedAsync(flightLogic.Flight);
@@ -67,8 +66,7 @@ namespace Airport.Services.Logics
             }
             return this;
         }
-
-        public async Task TakeOutFlightAsync()
+        public async Task ClearAsync()
         {
             if (_flightLogic == null)
             {
@@ -77,12 +75,13 @@ namespace Airport.Services.Logics
             }
             try
             {
-                await ExitStationAsync();
+                await ClearStationAsync();
                 await RaiseStationChangedAsync(null);
             }
             catch (Exception e) { await Task.FromException(e); }
         }
         public void Dispose() => _semaphore?.Dispose();
+
         protected virtual Task RaiseStationChangedAsync(Flight? flight)
         {
             try
@@ -93,7 +92,7 @@ namespace Airport.Services.Logics
             }
             catch (Exception e) { return Task.FromException(e); }
         }
-        private async Task ExitStationAsync()
+        private async Task ClearStationAsync()
         {
             try
             {
@@ -110,6 +109,11 @@ namespace Airport.Services.Logics
                 using var stationFlightRepository = await InsertStationFlightAsync(stationFlight);
                 // Sets flight logic to null as exiting from the station
                 _flightLogic = null;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, $"Error while updating the database");
+                await Task.FromException(ex);
             }
             catch (Exception e) { await Task.FromException(e); }
             finally { _semaphore.Release(); }

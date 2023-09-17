@@ -23,10 +23,9 @@ namespace Airport.Services.Providers
                 .Select(stationLogicFactory.CreateStationLogic));
         }
 
-        public IQueryable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate) => _stations
-            .AsQueryable()
+        public IQueryable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate) => GetAll()
             .Where(predicate);
-        public IStationLogic? FindById(int id) => _stations.FirstOrDefault(s => s.StationId == id);
+        public IStationLogic? FindById(int id) => GetAll().FirstOrDefault(s => s.StationId == id);
         public async Task<IEnumerable<IStationLogic>> FindByRouteId(int routeId)
         {
             using var routeRepository = _serviceProvider
@@ -41,9 +40,9 @@ namespace Airport.Services.Providers
                 .Distinct()
                 ?? Enumerable.Empty<Station>();
             return stations.Any()
-                ? _stations.Where(sl => stations.Any(s => s!.StationId == sl.StationId)).ToList()
+                ? GetAll().Where(sl => stations.Any(s => s!.StationId == sl.StationId)).ToList()
                 : Enumerable.Empty<IStationLogic>();
         }
-        public IEnumerable<IStationLogic> GetAll() => _stations;
+        public IQueryable<IStationLogic> GetAll() => _stations.AsQueryable();
     }
 }

@@ -34,6 +34,7 @@ namespace Airport.Services
             // Prepare stations query for sending the state of stations
             _stations = _stationLogicProvider
                 .GetAll()
+                .AsEnumerable()
                 .OrderBy(s => s.StationId)
                 .Select(s => new StationChangedData
                 {
