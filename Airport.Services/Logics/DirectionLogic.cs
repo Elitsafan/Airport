@@ -3,7 +3,7 @@ using Airport.Models.Interfaces;
 
 namespace Airport.Services.Logics
 {
-    internal class DirectionLogic : IDirectionLogic
+    public class DirectionLogic : IDirectionLogic
     {
         private readonly Direction _direction;
         public DirectionLogic(Direction direction) => _direction = direction;

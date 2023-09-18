@@ -73,7 +73,9 @@ namespace Airport.Services.Logics
         private void ScanNextLeg(int countRoutes, IStationLogic? station)
         {
             // Gets the next stations of 'station'
-            var nextStations = GetNextStationsOf(station);
+            var nextStations = station is null
+                ? Start()
+                : GetNextStationsOf(station);
             // End of route
             if (!nextStations.Any())
                 return;
@@ -163,18 +165,16 @@ namespace Airport.Services.Logics
             return default;
         }
         public IEnumerable<IStationLogic> GetStartStations() => Start();
-        public IEnumerable<IStationLogic> GetNextStationsOf(IStationLogic? stationLogic)
+        public IEnumerable<IStationLogic> GetNextStationsOf(IStationLogic stationLogic)
         {
-            List<IStationLogic> stations;
             if (stationLogic == null)
-                stations = Start();
-            else if (!_stations.Contains(stationLogic))
+                throw new ArgumentNullException(nameof(stationLogic));
+            if (!_stations.Contains(stationLogic))
                 throw new ArgumentException("Station not found");
-            else stations = _stations
+            return _stations
                .Where(s => _directions.Any(
                    d => d.From == stationLogic.StationId && d.To == s.StationId))
                .ToList();
-            return stations;
         }
         public IEnumerator<IStationLogic> GetEnumerator() => _stations.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

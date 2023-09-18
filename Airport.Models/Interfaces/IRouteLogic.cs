@@ -7,7 +7,7 @@ namespace Airport.Models.Interfaces
         int RouteId { get; }
         string RouteName { get; }
         Func<IStationLogic, bool> IsTrafficJam { get; }
-        IEnumerable<IStationLogic> GetNextStationsOf(IStationLogic? stationLogic);
+        IEnumerable<IStationLogic> GetNextStationsOf(IStationLogic stationLogic);
         IEnumerable<IStationLogic> GetStartStations();
         bool HasRightOfWay(IStationLogic? source, IStationLogic target);
         Task<AsyncSemaphore.Releaser> StartRunAsync();

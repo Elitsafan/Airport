@@ -49,7 +49,6 @@ namespace Airport.Services.Tests
             serviceCollection.AddScoped<IRouteRepository>(factory => _routeRepositoryMock.Object);
             serviceCollection.AddScoped<IStationRepository>(factory => _stationRepositoryMock.Object);
             serviceCollection.AddScoped<IStationFlightRepository>(factory => _stationFlightRepositoryMock.Object);
-            //serviceCollection.AddScoped<IFlightLogic>((logic) => _flightLogicMock.Object);
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
             _slLogger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
@@ -67,12 +66,6 @@ namespace Airport.Services.Tests
                 .Returns("Departure");
             _routeLogicMock
                 .Setup(x => x.GetStartStations())
-                .Returns(() => new IStationLogic[]
-                {
-                    stationLogics[0]
-                });
-            _routeLogicMock
-                .Setup(x => x.GetNextStationsOf(null))
                 .Returns(() => new IStationLogic[]
                 {
                     stationLogics[0]
