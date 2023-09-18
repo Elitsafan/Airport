@@ -10,9 +10,6 @@ namespace Airport.Data.Configurations
         {
             builder.HasKey(e => e.RouteId);
 
-            builder.HasMany(e => e.Flights)
-                .WithOne(e => e.Route);
-
             builder.HasIndex(e => e.RouteName)
                 .IsUnique();
 

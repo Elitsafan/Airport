@@ -12,6 +12,5 @@ namespace Airport.Models.Entities
         public string RouteName { get; set; } = null!;
         public virtual ICollection<TrafficLight>? TrafficLights { get; set; } = new HashSet<TrafficLight>();
         public virtual ICollection<Direction>? Directions { get; set; } = new HashSet<Direction>();
-        public virtual ICollection<Flight>? Flights { get; set; } = new HashSet<Flight>();
     }
 }
