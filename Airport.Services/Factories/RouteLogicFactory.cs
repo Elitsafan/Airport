@@ -1,5 +1,6 @@
 ﻿using Airport.Models.Interfaces;
 using Airport.Services.Creators;
+using MongoDB.Bson;
 
 namespace Airport.Services.Factories
 {
@@ -9,7 +10,7 @@ namespace Airport.Services.Factories
 
         public RouteLogicFactory(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
 
-        public IRouteLogicCreator GetCreator(int routeId, string routeName) => new RouteLogicCreator(
+        public IRouteLogicCreator GetCreator(ObjectId routeId, string routeName) => new RouteLogicCreator(
             routeId,
             routeName,
             _serviceProvider);

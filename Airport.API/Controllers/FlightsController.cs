@@ -2,7 +2,6 @@
 using Airport.Models.Entities;
 using Airport.Models.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Airport.API.Controllers
 {
@@ -29,22 +28,22 @@ namespace Airport.API.Controllers
         // GET: api/Flights/Landing
         [HttpPost("Landing")]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public async Task<IActionResult> Landing([FromBody] LandingDTO flight)
+        public IActionResult Landing([FromBody] LandingDTO flight)
         {
-            _flightSvc.ProcessFlight(await _flightMapper.MapAsync(flight));
+            _flightSvc.ProcessFlight(_flightMapper.Map(flight));
             return CreatedAtRoute(nameof(AirportController.Status), StatusCodes.Status201Created);
         }
 
         // GET: api/Flights/Departure
         [HttpPost("Departure")]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public async Task<IActionResult> Departure([FromBody] DepartureDTO flight)
+        public IActionResult Departure([FromBody] DepartureDTO flight)
         {
-            _flightSvc.ProcessFlight(await _flightMapper.MapAsync(flight));
+            _flightSvc.ProcessFlight(_flightMapper.Map(flight));
             return CreatedAtRoute(nameof(AirportController.Status), StatusCodes.Status201Created);
         }
     }

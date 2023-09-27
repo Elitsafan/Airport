@@ -1,18 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Airport.Models.Entities
 {
-    [Table("Stations")]
     public class Station
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int StationId { get; set; }
-        public DateTime? Entrance { get; set; }
-        public DateTime? Exit { get; set; }
+        [BsonId]
+        public ObjectId StationId { get; set; }
+        [BsonElement("estimated_waiting_time")]
         public TimeSpan EstimatedWaitingTime { get; set; }
-        public virtual TrafficLight? TrafficLight { get; set; }
-        public virtual ICollection<Direction>? DirectionsFrom { get; set; } = new HashSet<Direction>();
-        public virtual ICollection<Direction>? DirectionsTo { get; set; } = new HashSet<Direction>();
-        public virtual ICollection<Flight>? Flights { get; set; } = new HashSet<Flight>();
     }
 }

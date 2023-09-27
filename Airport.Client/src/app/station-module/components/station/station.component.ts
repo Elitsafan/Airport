@@ -7,5 +7,5 @@ import { Station } from '../../models/station.model';
   styleUrls: ['./station.component.scss']
 })
 export class StationComponent {
-  @Input() station?: Station
+  @Input() station?: Station;
 }

@@ -14,7 +14,7 @@ namespace Airport.Services.Factories
         public IStationLogic CreateStationLogic(Station station)
         {
             var logger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
-            return new StationLogic(_serviceProvider, logger, station);
+            return new StationLogic(logger, station);
         }
     }
 }

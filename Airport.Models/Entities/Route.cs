@@ -1,17 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json;
 
 namespace Airport.Models.Entities
 {
-    [Table("Routes")]
     public class Route
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int RouteId { get; set; }
-        [Required]
-        public string RouteName { get; set; } = null!;
-        public virtual ICollection<TrafficLight>? TrafficLights { get; set; } = new HashSet<TrafficLight>();
-        public virtual ICollection<Direction>? Directions { get; set; } = new HashSet<Direction>();
-        public virtual ICollection<Flight>? Flights { get; set; } = new HashSet<Flight>();
+        private List<Direction>? _directions;
+
+        [BsonId]
+        public ObjectId RouteId { get; set; }
+        [BsonRequired]
+        [BsonElement("route_name")]
+        [JsonProperty("route_name")]
+        public string RouteName { get; set; } = string.Empty;
+        [BsonElement("directions")]
+        [JsonProperty("directions")]
+        public List<Direction> Directions 
+        {
+            get => _directions ?? new List<Direction>();
+            set => _directions = value;
+        }
     }
 }

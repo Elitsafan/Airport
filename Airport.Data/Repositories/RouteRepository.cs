@@ -1,30 +1,36 @@
-﻿using Airport.Data.Accessories;
-using Airport.Models.Entities;
+﻿using Airport.Models.Entities;
 using Airport.Models.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Airport.Data.Repositories
 {
     public class RouteRepository : IRouteRepository
     {
-        private readonly AirportContext _context;
+        private readonly IMongoCollection<Route> _routesCollection;
+        private IMongoClient? _client;
 
-        public RouteRepository(AirportContext context) => _context = context;
+        public RouteRepository(IMongoClient client, IAirportDbConfiguration dbSettings)
+        {
+            _client = client;
+            _routesCollection = _client
+                .GetDatabase(dbSettings.DatabaseName)
+                .GetCollection<Route>(dbSettings.RoutesCollectionName);
+        }
 
-        public async Task<Route> GetByIdAsync(int id) => await _context.Routes
-            .Include(r => r.Directions)!
-                .ThenInclude(d => d.StationFrom)
-            .Include(r => r.Directions)!
-                .ThenInclude(d => d.StationTo)
-            .Include(r => r.Flights)
-            .FirstOrDefaultAsync(r => r.RouteId == id) ?? throw new EntityNotFoundException();
-        public IQueryable<Route> GetAll() => _context.Routes
-            .Include(r => r.Directions)!
-                .ThenInclude(d => d.StationFrom)
-            .Include(r => r.Directions)!
-                .ThenInclude(d => d.StationTo)
-            .Include(r => r.Flights)
-            .AsQueryable();
-        public void Dispose() => _context?.Dispose();
+        public async Task<Route> GetRouteByIdAsync(ObjectId id) => await _routesCollection
+            .Find(r => r.RouteId == id)
+            .SingleAsync();
+        public async Task<IEnumerable<Route>> GetAllAsync() => await _routesCollection
+            .Find(Builders<Route>.Filter.Empty)
+            .ToListAsync();
+        public async Task<IEnumerable<Route>> GetRoutesByStationIdAsync(ObjectId stationId) => (await _routesCollection
+            .Find(Builders<Route>.Filter.Empty)
+            .ToListAsync())
+            .Where(r => r.Directions
+                .Select(d => new ObjectId[] { d.From, d.To })
+                .SelectMany(arr => arr)
+                .Any(id => id == stationId));
+        public void Dispose() => _client = null;
     }
 }

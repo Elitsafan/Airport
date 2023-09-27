@@ -1,10 +1,4 @@
-﻿using Airport.Models.Entities;
-using Airport.Models.Interfaces;
-using Airport.Services.Logics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Moq;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Linq.Expressions;
 
 namespace Airport.Services.Tests
 {
@@ -13,17 +7,26 @@ namespace Airport.Services.Tests
         #region Fields
         private ServiceProvider _serviceProvider;
         private ILogger<StationLogic> _slLogger;
+        private Mock<IStationLogic>[] _stationLogics;
         private ITrafficLightLogic _trafficLightLogic;
         private TrafficLight _trafficLight;
         private Mock<IStationLogicProvider> _stationLogicProviderMock;
-        private IStationLogic _stationLogic;
         private Mock<IDirectionLogicProvider> _directionLogicProviderMock;
         private Mock<IRouteRepository> _routeRepository;
-        private Mock<IFlightLogic> _flightLogicMock; 
+        private Mock<IFlightLogic> _flightLogicMock;
+        private ObjectId[] _ids;
+        private ObjectId _trafficLightId1;
+        private Route[] _routes;
         #endregion
 
         public TrafficLightLogicTests()
         {
+            _ids = new ObjectId[]
+            {
+                ObjectId.Parse("000000000000000000000001"),
+                ObjectId.Parse("000000000000000000000002"),
+                ObjectId.Parse("000000000000000000000003")
+            };
             _stationLogicProviderMock = new Mock<IStationLogicProvider>();
             _directionLogicProviderMock = new Mock<IDirectionLogicProvider>();
             _routeRepository = new Mock<IRouteRepository>();
@@ -40,9 +43,10 @@ namespace Airport.Services.Tests
             //mocks[0].SetupGet(x => x.StationId).Returns(2);
             //mocks[0].SetupGet(x => x.StationId).Returns(3);
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILogger<StationLogic>>(factory => new Mock<ILogger<StationLogic>>().Object);
             serviceCollection.AddSingleton<IStationLogicProvider>(factory => _stationLogicProviderMock.Object);
             serviceCollection.AddSingleton<IDirectionLogicProvider>(factory => _directionLogicProviderMock.Object);
+            serviceCollection.AddScoped<IRouteRepository>((factory) => new Mock<IRouteRepository>().Object);
             serviceCollection.AddScoped<IStationRepository>((factory) => new Mock<IStationRepository>().Object);
             serviceCollection.AddScoped<IFlightLogic>(logic => _flightLogicMock.Object);
             //serviceCollection.AddScoped<IRouteRepository>((factory) => _routeRepository.Object);
@@ -50,62 +54,65 @@ namespace Airport.Services.Tests
 
             _trafficLight = new TrafficLight
             {
-                Station = new Station
+                StationId = _ids[1],
+                TrafficLightId = _trafficLightId1,
+            };
+            _routes = new[]
+            {
+                new Route
                 {
-                    StationId = 2
-                },
-                StationId = 2,
-                TrafficLightId = 1,
-                Routes = new List<Route>
-                {
-                    new Route
+                    RouteId = new ObjectId("650abb1ee574435a814d7ec0"),
+                    RouteName = "Landing",
+                    Directions = new List<Direction>
                     {
-                        RouteId = 1,
-                        RouteName = "Landing",
-                        Directions = new List<Direction>
+                        new Direction
                         {
-                            new Direction
-                            {
-                                DirectionId = 1,
-                                From = 1,
-                                To = 2
-                            }
+                            From = _ids[0],
+                            To = _ids[1],
                         }
-                    },
-                    new Route
+                    }
+                },
+                new Route
+                {
+                    RouteId = new ObjectId("650abb1ee574435a814d7ec"),
+                    RouteName = "Departure",
+                    Directions = new List<Direction>
                     {
-                        RouteId = 2,
-                        RouteName = "Departure",
-                        Directions = new List<Direction>
+                        new Direction
                         {
-                            new Direction
-                            {
-                                DirectionId = 2,
-                                From = 3,
-                                To = 2
-                            }
+                            From = _ids[2],
+                            To = _ids[1],
                         }
                     }
                 }
             };
             _slLogger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
-            var stationLogics = new IStationLogic[]
+            _stationLogics = new Mock<IStationLogic>[]
             {
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 1 }),
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 3 })
+                new Mock<IStationLogic>(),
+                new Mock<IStationLogic>(),
+                new Mock<IStationLogic>(),
             };
-            _stationLogic = new StationLogic(_serviceProvider, _slLogger, _trafficLight.Station);
+            _stationLogics[0]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[0]);
+            _stationLogics[1]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[1]);
+            _stationLogics[2]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[2]);
             _stationLogicProviderMock
                 .Setup(x => x.GetAll())
                 .Returns(() => new IStationLogic[]
                 {
-                    stationLogics[0],
-                    _stationLogic,
-                    stationLogics[1],
-                }.AsQueryable());
+                    _stationLogics[0].Object,
+                    _stationLogics[1].Object,
+                    _stationLogics[2].Object,
+                });
             _stationLogicProviderMock
-                .Setup(x => x.FindBy(sl => It.Is<IStationLogic>(s => true).StationId == sl.StationId))
-                .Returns(() => stationLogics.AsQueryable());
+                .Setup(x => x.FindBy(It.IsAny<Expression<Func<IStationLogic, bool>>>()))
+                .Returns(() => new IStationLogic[] { _stationLogics[0].Object });
             _trafficLightLogic = new TrafficLightLogic(_serviceProvider, _trafficLight);
         }
 
@@ -114,40 +121,43 @@ namespace Airport.Services.Tests
         public void IsAnyOtherFlightStandingBy_NoFlightStandingby_ReturnsFalse_Test()
         {
             var slp = _serviceProvider.GetRequiredService<IStationLogicProvider>();
-            var sl3 = slp.GetAll().First(sl => sl.StationId == 3);
+            var sl3 = slp.GetAll().First(sl => sl.StationId == _ids[2]);
             var result = _trafficLightLogic.IsAnyOtherFlightStandingBy(sl3);
             Assert.False(result);
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public void IsAnyOtherFlightStandingBy_FlightStandingby_ReturnsTrue_Test()
+        public async Task IsAnyOtherFlightStandingBy_FlightStandingby_ReturnsTrue_Test()
         {
-            //TODO
-
-            //var slp = _serviceProvider.GetRequiredService<IStationLogicProvider>();
-            //var sl3 = slp.GetAll().First(sl => sl.StationId == 3);
-            //var sl1 = slp.GetAll().First(sl => sl.StationId == 1);
-            //var flightLogic = _serviceProvider
-            //    .CreateAsyncScope()
-            //    .ServiceProvider
-            //    .GetRequiredService<IFlightLogic>();
-            //await sl1.SetFlightAsync(flightLogic);
-            //var result = _trafficLightLogic.IsAnyOtherFlightStandingBy(sl3);
-            //Assert.True(result);
+            var slp = _serviceProvider.GetRequiredService<IStationLogicProvider>();
+            var sl3 = slp.GetAll().First(sl => sl.StationId == _ids[2]);
+            var sl1 = slp.GetAll().First(sl => sl.StationId == _ids[0]);
+            var flightLogic = _serviceProvider
+                .CreateAsyncScope()
+                .ServiceProvider
+                .GetRequiredService<IFlightLogic>();
+            await sl1.SetFlight(flightLogic);
+            _stationLogics[0]
+                .SetupGet(x => x.CurrentFlightType)
+                .Returns(Models.Enums.FlightType.Landing);
+            _stationLogics[0]
+                .SetupGet(x => x.CurrentFlightId)
+                .Returns(It.IsAny<ObjectId>());
+            var result = _trafficLightLogic.IsAnyOtherFlightStandingBy(sl3);
+            Assert.True(result);
         }
 
-        [Fact]
-        public void IsAnyOtherFlightStandingBy_FlightStandingbyCheckedByType_ReturnsTrue_Test()
-        {
-            //TODO
-        }
+        //[Fact]
+        //public void IsAnyOtherFlightStandingBy_FlightStandingbyCheckedByType_ReturnsTrue_Test()
+        //{
+        //    // TODO
+        //}
 
-        [Fact]
-        public void IsAnyOtherFlightStandingBy_NoFlightStandingbyCheckedByType_ReturnsFalse_Test()
-        {
-            //TODO
-        }
+        //[Fact]
+        //public void IsAnyOtherFlightStandingBy_NoFlightStandingbyCheckedByType_ReturnsFalse_Test()
+        //{
+        //    // TODO
+        //}
 
         public void Dispose() => _serviceProvider.Dispose();
     }

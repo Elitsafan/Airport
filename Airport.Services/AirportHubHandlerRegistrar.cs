@@ -3,6 +3,7 @@ using Airport.Models.Enums;
 using Airport.Models.EventArgs;
 using Airport.Models.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -73,12 +74,12 @@ namespace Airport.Services
 
         private class StationChangedData
         {
-            public int StationId { get; set; }
+            public ObjectId StationId { get; set; }
             public FlightInfo? Flight { get; set; }
         }
         private class FlightInfo
         {
-            public Guid? FlightId { get; set; }
+            public ObjectId? FlightId { get; set; }
             public FlightType? FlightType { get; set; }
         }
     }

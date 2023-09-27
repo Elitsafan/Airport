@@ -2,7 +2,7 @@
 {
     public interface IEntityMapper<TEntity, TModel> : IDisposable
     {
-        Task<TEntity> MapAsync(TModel model);
+        TEntity Map(TModel model);
         TModel Map(TEntity entity);
     }
 }

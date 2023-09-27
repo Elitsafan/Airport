@@ -2,6 +2,6 @@
 {
     public interface IRepository<T> : IDisposable where T : class
     {
-        IQueryable<T> GetAll();
+        Task<IEnumerable<T>> GetAllAsync();
     }
 }

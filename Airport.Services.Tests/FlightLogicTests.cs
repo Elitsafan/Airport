@@ -1,14 +1,4 @@
-﻿using Airport.Models.Entities;
-using Airport.Models.EventArgs;
-using Airport.Models.Interfaces;
-using Airport.Services.Logics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.Threading;
-using Moq;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Airport.Services.Tests
+﻿namespace Airport.Services.Tests
 {
     public class FlightLogicTests : IDisposable
     {
@@ -18,21 +8,21 @@ namespace Airport.Services.Tests
         private Mock<IFlightRepository> _flightRepositoryMock;
         private Mock<IRouteRepository> _routeRepositoryMock;
         private Mock<IStationRepository> _stationRepositoryMock;
-        private Mock<IStationFlightRepository> _stationFlightRepositoryMock;
         private Mock<IRouteLogic> _routeLogicMock;
         private Mock<IRouteLogicProvider> _routeLogicProviderMock;
         private Mock<IStationLogicProvider> _stationLogicProviderMock;
         private Mock<IDirectionLogicProvider> _directionLogicProviderMock;
         private Mock<ITrafficLightLogicProvider> _trafficLightLogicProviderMock;
         private bool _onFlightRunDoneEventRaised;
+        private ObjectId _routeLogicId;
 
         public FlightLogicTests()
         {
             _onFlightRunDoneEventRaised = false;
+            _routeLogicId = new ObjectId("650abb1ee574435a814d7ec1");
             _flightRepositoryMock = new Mock<IFlightRepository>();
             _routeRepositoryMock = new Mock<IRouteRepository>();
             _stationRepositoryMock = new Mock<IStationRepository>();
-            _stationFlightRepositoryMock = new Mock<IStationFlightRepository>();
             _routeLogicMock = new Mock<IRouteLogic>();
             _routeLogicProviderMock = new Mock<IRouteLogicProvider>();
             _stationLogicProviderMock = new Mock<IStationLogicProvider>();
@@ -40,7 +30,8 @@ namespace Airport.Services.Tests
             _trafficLightLogicProviderMock = new Mock<ITrafficLightLogicProvider>();
 
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILogger<IFlightLogic>>(factory => new Mock<ILogger<IFlightLogic>>().Object);
+            serviceCollection.AddSingleton<ILogger<StationLogic>>(factory => new Mock<ILogger<StationLogic>>().Object);
             serviceCollection.AddSingleton<IRouteLogicProvider>(factory => _routeLogicProviderMock.Object);
             serviceCollection.AddSingleton<IStationLogicProvider>(factory => _stationLogicProviderMock.Object);
             serviceCollection.AddSingleton<IDirectionLogicProvider>(factory => _directionLogicProviderMock.Object);
@@ -48,19 +39,18 @@ namespace Airport.Services.Tests
             serviceCollection.AddScoped<IFlightRepository>(factory => _flightRepositoryMock.Object);
             serviceCollection.AddScoped<IRouteRepository>(factory => _routeRepositoryMock.Object);
             serviceCollection.AddScoped<IStationRepository>(factory => _stationRepositoryMock.Object);
-            serviceCollection.AddScoped<IStationFlightRepository>(factory => _stationFlightRepositoryMock.Object);
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
             _slLogger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
             var stationLogics = new IStationLogic[]
             {
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 1 }),
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 2 }),
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 3 })
+                new StationLogic(_slLogger, new Station { StationId = ObjectId.GenerateNewId() }),
+                new StationLogic(_slLogger, new Station { StationId = ObjectId.GenerateNewId() }),
+                new StationLogic(_slLogger, new Station { StationId = ObjectId.GenerateNewId() })
             };
             _routeLogicMock
                 .SetupGet(x => x.RouteId)
-                .Returns(2);
+                .Returns(_routeLogicId);
             _routeLogicMock
                 .SetupGet(x => x.RouteName)
                 .Returns("Departure");
@@ -71,16 +61,16 @@ namespace Airport.Services.Tests
                     stationLogics[0]
                 });
             _routeLogicMock
-                .SetupSequence(x => x.GetRightOfWayAsync(null, stationLogics[0]!, default))
+                .SetupSequence(x => x.GetRightOfWay(null, stationLogics[0]!, default))
                 .ReturnsAsync(() => default);
             _routeLogicMock
-                .SetupSequence(x => x.GetRightOfWayAsync(stationLogics[0]!, stationLogics[1]!, default))
+                .SetupSequence(x => x.GetRightOfWay(stationLogics[0]!, stationLogics[1]!, default))
                 .ReturnsAsync(() => default);
             _routeLogicMock
-                .SetupSequence(x => x.GetRightOfWayAsync(stationLogics[1], stationLogics[2]!, default))
+                .SetupSequence(x => x.GetRightOfWay(stationLogics[1], stationLogics[2]!, default))
                 .ReturnsAsync(() => default);
             _routeLogicMock
-                .Setup(x => x.StartRunAsync())
+                .Setup(x => x.StartRun())
                 .ReturnsAsync(() => default);
             _routeLogicProviderMock
                 .Setup(x => x.DepartureRoutes)
@@ -100,43 +90,31 @@ namespace Airport.Services.Tests
         }
 
         [Fact]
-        public void Flight_FlightLogicConstructed_ReturnsFlight_Test()
-        {
-            Assert.NotNull(_flightLogic.Flight);
-        }
+        public void Flight_FlightLogicConstructed_ReturnsFlight_Test() => Assert.NotNull(_flightLogic.Flight);
 
         [Fact]
-        public void RouteId_FlightLogicConstructed_ReturnsNonZero_Test()
-        {
-            Assert.True(_flightLogic.RouteId > 0);
-        }
+        public void RouteId_FlightLogicConstructed_ReturnsValidValue_Test() => Assert.True(_flightLogic.RouteId != ObjectId.Empty);
 
         [Fact]
-        public void CurrentStation_FlightLogicConstructed_ReturnsNull_Test()
-        {
-            Assert.Null(_flightLogic.CurrentStation);
-        }
+        public void CurrentStation_FlightLogicConstructed_ReturnsNull_Test() => Assert.Null(_flightLogic.CurrentStation);
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task FlightRunDoneEvent_FlightRunDone_FlightRunDoneEventRaised_Test()
         {
             _flightLogic.FlightRunDone += OnFlightRunDone;
-            await _flightLogic.RunAsync();
+            await _flightLogic.Run();
             Assert.True(_onFlightRunDoneEventRaised);
             _flightLogic.FlightRunDone -= OnFlightRunDone;
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public async Task RunAsync_Executed_FlightStartRunning_Test()
+        public async Task Run_Executed_FlightStartRunning_Test()
         {
-            await _flightLogic.RunAsync();
+            await _flightLogic.Run();
             Assert.NotNull(_flightLogic.Flight);
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task ThrowIfCancellationRequested_WhenCalledSecondly_ThrowsOperationCancelledException_Test()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -148,7 +126,6 @@ namespace Airport.Services.Tests
 
         // Impossible to test event raised with Assert.RaisesAnyAsync().
         // AsyncEventHandler type is not supported.
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         private async Task OnFlightRunDone(object? sender, Models.EventArgs.FlightRunDoneEventArgs args)
         {
             _onFlightRunDoneEventRaised = true;

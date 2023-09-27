@@ -1,13 +1,10 @@
-﻿using Airport.Models.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Airport.Models.Interfaces;
+using MongoDB.Driver;
 
 namespace Airport.Data.Configurations
 {
-    internal class LandingConfiguration : IEntityTypeConfiguration<Landing>
+    internal class LandingConfiguration
     {
-        public void Configure(EntityTypeBuilder<Landing> builder)
-        {
-        }
+        public async Task ConfigureAsync(IMongoClient client, IAirportDbConfiguration dbSettings) => await Task.CompletedTask;
     }
 }

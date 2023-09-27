@@ -1,13 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Airport.Models.Entities
 {
+    [BsonDiscriminator]
+    [BsonKnownTypes(typeof(Departure), typeof(Landing))]
     public abstract class Flight
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public Guid FlightId { get; set; }
-        public int? RouteId { get; set; }
-        public virtual Route? Route { get; set; }
-        public virtual ICollection<Station>? Stations { get; set; } = new HashSet<Station>();
+        private List<StationOccupationDetails>? _stationOccupationDetails;
+
+        [BsonId]
+        public ObjectId FlightId { get; set; }
+        [BsonElement("route_id")]
+        public ObjectId? RouteId { get; set; }
+
+        [BsonElement("stations_occupation_details")]
+        public List<StationOccupationDetails> StationOccupationDetails
+        {
+            get
+            {
+                _stationOccupationDetails ??= new List<StationOccupationDetails>();
+                return _stationOccupationDetails;
+            }
+        }
     }
 }

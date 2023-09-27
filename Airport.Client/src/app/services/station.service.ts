@@ -6,6 +6,7 @@ import { Landing } from '../flight-module/models/landing.model.ts';
 import { IFlight } from '../interfaces/iflight.interface';
 import { Station } from '../station-module/models/station.model';
 import { AirportService } from './airport.service';
+import { ColorService } from './color.service';
 import { SignalrService } from './signalr.service';
 
 @Injectable({
@@ -18,7 +19,10 @@ export class StationService implements OnDestroy {
   private stationsSubscription?: Subscription;
   private stationsSubject = new BehaviorSubject<Station[]>([]);
 
-  constructor(private airportSvc: AirportService, private signalRSvc: SignalrService) {
+  constructor(
+    private airportSvc: AirportService,
+    private signalRSvc: SignalrService,
+    private colorSvc: ColorService) {
     this.stations = [];
     this.stations$ = this.stationsSubject.asObservable();
   }
@@ -40,6 +44,7 @@ export class StationService implements OnDestroy {
   private fetch() {
     return lastValueFrom(this.airportSvc.getStatus())
       .then((airport) => {
+        console.log(airport)
         this.stations = airport!.stations.map(
           station => new Station(
             station.stationId,
@@ -52,14 +57,14 @@ export class StationService implements OnDestroy {
   private flightResolver(flight?: IFlight) {
     return flight
       ? flight.flightType === 'Departure'
-        ? new Departure(flight.flightId, flight.stationId)
-        : new Landing(flight.flightId, flight.stationId)
+        ? new Departure(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
+        : new Landing(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
       : undefined;
   }
 
   private handleStationsSubscription() {
     this.stationsSubscription = this.signalRSvc.data$
-      ?.subscribe((stations: Station[]) => {
+      ?.subscribe((stations: any/*Station[]*/) => {
         this.stations?.forEach((station, i) => station.flight = this.flightResolver(stations[i].flight))
         this.stationsSubject.next(this.stations);
       })

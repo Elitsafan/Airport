@@ -1,4 +1,5 @@
 ﻿using Airport.Models.Enums;
+using MongoDB.Bson;
 
 namespace Airport.Models.Interfaces
 {
@@ -9,7 +10,7 @@ namespace Airport.Models.Interfaces
         /// </summary>
         /// <param name="routeId">The route whom <see langword="this"/> <see cref="ITrafficLightLogic"/> belongs to</param>
         /// <returns><see cref="IStationLogic"/> that stadns before <see langword="this"/> traffic light/> </returns>
-        IEnumerable<IStationLogic?> this[int routeId] { get; }
+        IEnumerable<IStationLogic> this[ObjectId routeId] { get; }
         /// <summary>
         /// Checks if there is any other flight standing by on any of the stations near the traffic light
         /// </summary>
@@ -25,7 +26,7 @@ namespace Airport.Models.Interfaces
         /// <summary>
         /// Gets the station id that associates with the traffic light
         /// </summary>
-        int StationId { get; }
-        int TrafficLightId { get; }
+        ObjectId StationId { get; }
+        ObjectId TrafficLightId { get; }
     }
 }

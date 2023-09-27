@@ -1,19 +1,19 @@
 ﻿using Airport.Models.Enums;
 using Airport.Models.Interfaces;
-using Airport.Services.Factories;
 using Airport.Services.Creators;
+using Airport.Services.Factories;
 
 namespace Airport.Services.Mappers
 {
     public class FlightCreatorAdapter : IEntityMapper<IFlightCreator, IFlightDTOFactory>
     {
-        public Task<IFlightCreator> MapAsync(IFlightDTOFactory creator)
+        public IFlightCreator Map(IFlightDTOFactory creator)
         {
             if (creator == null) throw new ArgumentNullException(nameof(creator));
             return creator.Create().FlightType switch
             {
-                FlightType.Landing => Task.FromResult<IFlightCreator>(new LandingCreator()),
-                FlightType.Departure => Task.FromResult<IFlightCreator>(new DepartureCreator()),
+                FlightType.Landing => new LandingCreator(),
+                FlightType.Departure => new DepartureCreator(),
                 _ => throw new Exception(),
             };
         }

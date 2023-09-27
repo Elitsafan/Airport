@@ -1,6 +1,8 @@
 ﻿using Airport.Models.Entities;
 using Airport.Models.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.Threading;
+using MongoDB.Bson;
 
 namespace Airport.Services.Providers
 {
@@ -17,33 +19,29 @@ namespace Airport.Services.Providers
                 .ServiceProvider
                 .GetRequiredService<IRouteRepository>();
             // Creates the direction logics
-            _directions = new HashSet<IDirectionLogic>(routeRepository
-                .GetAll()
-                .AsEnumerable()
-                .SelectMany(r => r.Directions ?? Enumerable.Empty<Direction>())
+            _directions = new HashSet<IDirectionLogic>(
+                new JoinableTaskFactory(new JoinableTaskContext())
+                .Run(routeRepository.GetAllAsync)
+                .SelectMany(r => r.Directions)
                 .Select(directionLogicFactory.CreateDirectionLogic)
                 .ToList());
         }
 
-        public async Task<IEnumerable<IDirectionLogic>> FindByRouteId(int routeId)
+        public async Task<IEnumerable<IDirectionLogic>> GetDirectionsByRouteIdAsync(ObjectId routeId)
         {
             using var routeRepository = _serviceProvider
                 .CreateAsyncScope()
                 .ServiceProvider
                 .GetRequiredService<IRouteRepository>();
-            var route = await routeRepository.GetByIdAsync(routeId);
-            return _directions
-                .Where(dl => route.Directions != null && route.Directions.Any(d => d.DirectionId == dl.DirectionId))
-                .ToList();
+            return (await routeRepository
+                .GetRouteByIdAsync(routeId))
+                .Directions
+                .Select(GetIDirectionLogic);
         }
 
-        public IEnumerable<IStationLogic?> GetStationsByTargetAndRoute(int stationLogicId, int routeId)
-        {
-            var stationLogicProvider = _serviceProvider.GetRequiredService<IStationLogicProvider>();
-            return _directions
-                .Where(d => d.RouteId == routeId && d.To == stationLogicId && d.From.HasValue)
-                .Select(d => stationLogicProvider.FindById(d.From!.Value))
-                .ToList();
-        }
+        private IDirectionLogic GetIDirectionLogic(Direction direction) => direction == null
+            ? throw new ArgumentNullException(nameof(direction))
+            : _directions.FirstOrDefault(d => d.From == direction.From && d.To == direction.To)
+            ?? throw new ArgumentException("Direction not found", nameof(direction));
     }
 }

@@ -8,6 +8,7 @@ import { Landing } from '../flight-module/models/landing.model.ts';
 import { IFlight } from '../interfaces/iflight.interface';
 import { Station } from '../station-module/models/station.model';
 import { AirportService } from './airport.service';
+import { ColorService } from './color.service';
 import { SignalrService } from './signalr.service';
 
 @Injectable({
@@ -27,7 +28,11 @@ export class FlightService implements OnDestroy {
   private landingsSubject = new BehaviorSubject<Landing[]>([]);
   private departuresSubject = new BehaviorSubject<Departure[]>([]);
 
-  constructor(private airportSvc: AirportService, private signalRSvc: SignalrService) {
+  constructor(
+    private airportSvc: AirportService,
+    private signalRSvc: SignalrService,
+    private colorSvc: ColorService
+  ) {
     this.landings = [];
     this.departures = [];
     this.landings$ = this.landingsSubject.asObservable();
@@ -80,8 +85,18 @@ export class FlightService implements OnDestroy {
   private fetch() {
     return this.airportSvc.getStatus().subscribe({
       next: (airport) => {
-        this.landings = airport.landings.map(flight => new Landing(flight.flightId!, flight.stationId));
-        this.departures = airport.departures.map(flight => new Departure(flight.flightId!, flight.stationId));
+        this.landings = airport.landings.map(flight => new Landing(
+          flight.flightId!,
+          flight.stationId,
+          this.colorSvc.getColor(
+            flight.flightId,
+            flight.flightType)));
+        this.departures = airport.departures.map(flight => new Departure(
+          flight.flightId!,
+          flight.stationId,
+          this.colorSvc.getColor(
+            flight.flightId,
+            flight.flightType)));
         // Triggers initial flights
         this.departuresSubject.next(this.departures);
         this.landingsSubject.next(this.landings);
@@ -95,8 +110,8 @@ export class FlightService implements OnDestroy {
   private flightResolver(flight?: IFlight) {
     return flight
       ? flight.flightType === 'Departure'
-        ? new Departure(flight.flightId, flight.stationId)
-        : new Landing(flight.flightId, flight.stationId)
+        ? new Departure(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
+        : new Landing(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
       : undefined;
   }
 }

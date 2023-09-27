@@ -1,27 +1,26 @@
-//#define SQLITE
 using Airport.Data;
 using Airport.Data.Repositories;
 using Airport.Models;
 using Airport.Models.DTOs;
 using Airport.Models.Entities;
+using Airport.Models.Helpers;
 using Airport.Models.Interfaces;
 using Airport.Services;
 using Airport.Services.Factories;
 using Airport.Services.Mappers;
 using Airport.Services.Providers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Options;
+using Microsoft.VisualStudio.Threading;
+using MongoDB.Driver;
+using Newtonsoft.Json;
 
 namespace Airport.API
 {
     public class Program
     {
-#if !SQLITE
-        private static string SqlServerConnectionString = "SqlServerConnection";
-#else
-        private static string sqliteConnectionString = "SqliteConnection";
-#endif
-        private static string defaultClientOrigin = "defaultClientOrigin";
+        private static string defaultClientOrigin = "DefaultClientOrigin";
+        private static string defaultConnectionString = "Default";
 
         public static void Main(string[] args)
         {
@@ -29,17 +28,7 @@ namespace Airport.API
             AppDomain.CurrentDomain.UnhandledException += GlobalUnhandledExceptionHandler;
             var builder = WebApplication.CreateBuilder(args);
             Configuration = builder.Configuration;
-#if !SQLITE
-            builder.Services.AddDbContext<AirportContext>(options => options
-                .ConfigureWarnings(builder => builder.Ignore(RelationalEventId.MultipleCollectionIncludeWarning))
-                .UseLazyLoadingProxies()
-                .UseSqlServer(Configuration.GetConnectionString(SqlServerConnectionString)), ServiceLifetime.Transient);
-#else
-            builder.Services.AddDbContext<AirportContext>(options => options
-                .ConfigureWarnings(builder => builder.Ignore(RelationalEventId.MultipleCollectionIncludeWarning))
-                .UseLazyLoadingProxies()
-                .UseSqlite(Configuration.GetConnectionString(sqliteConnectionString)));
-#endif
+
             builder.Services.AddSignalR(/*options => options.EnableDetailedErrors = true*/);
             builder.Services.AddCors(options =>
             {
@@ -53,6 +42,12 @@ namespace Airport.API
                     });
             });
             builder.Services.AddScoped<IFlightService, FlightService>();
+            builder.Services.Configure<AirportDbConfiguration>(Configuration.GetSection(nameof(AirportDbConfiguration)));
+            builder.Services.AddSingleton<IAirportDbConfiguration>(
+                provider => provider.GetRequiredService<IOptions<AirportDbConfiguration>>().Value);
+            builder.Services.AddSingleton<IMongoClient>(
+                provider => new MongoClient(Configuration.GetConnectionString(defaultConnectionString)));
+            builder.Services.AddSingleton<IAirportDbContextSetup, AirportDbContextSetup>();
             builder.Services.AddSingleton<IRouteLogicFactory, RouteLogicFactory>();
             builder.Services.AddSingleton<IFlightLogicFactory, FlightLogicFactory>();
             builder.Services.AddSingleton<IFlightCreatorFactory, FlightCreatorFactory>();
@@ -67,22 +62,18 @@ namespace Airport.API
             builder.Services.AddScoped<IAirportService, AirportService>();
             builder.Services.AddScoped<IRouteRepository, RouteRepository>();
             builder.Services.AddScoped<IStationRepository, StationRepository>();
-            builder.Services.AddScoped<IStationFlightRepository, StationFlightRepository>();
             builder.Services.AddScoped<IFlightRepository, FlightRepository>();
             builder.Services.AddScoped<ITrafficLightRepository, TrafficLightRepository>();
             builder.Services.AddScoped<IEntityMapper<Flight, IFlight>, FlightMapper>();
             builder.Services.AddScoped<IEntityMapper<Station, StationDTO>, StationMapper>();
             builder.Services.AddScoped<IEntityMapper<IFlightCreator, IFlightDTOFactory>, FlightCreatorAdapter>();
             builder.Services.AddControllers()
-                .AddNewtonsoftJson();
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                });
             var app = builder.Build();
 
-            using (var scoped = app.Services.CreateScope())
-            {
-                var ctx = scoped.ServiceProvider.GetRequiredService<AirportContext>();
-                ctx.Database.EnsureDeleted();
-                ctx.Database.EnsureCreated();
-            }
             app.UseCors();
             app.MapControllers();
             app.MapHub<AirportHub>("/airporthub");
