@@ -35,7 +35,6 @@ namespace Airport.Services
             // Prepare stations query for sending the state of stations
             _stations = _stationLogicProvider
                 .GetAll()
-                .AsEnumerable()
                 .OrderBy(s => s.StationId)
                 .Select(s => new StationChangedData
                 {
@@ -52,12 +51,30 @@ namespace Airport.Services
         }
 
         public void Initialize() => RegisterStationChanged(_stationLogicProvider.GetAll());
-
-        private void RegisterStationChanged(IEnumerable<IStationLogic> stationLogics)
+        /// <summary>
+        /// Sends the flight id when the flight run ends.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public async Task OnFlightRunDone(object? sender, FlightRunDoneEventArgs e)
         {
-            foreach (var stationLogic in stationLogics)
-                stationLogic.StationChanged += OnStationChangedAsync;
+            try
+            {
+                await _hub.Clients.All.SendAsync(
+                nameof(IFlightLogic.FlightRunDone),
+                    JsonConvert.SerializeObject(e.FlightDone.Flight.FlightId, _jsonSerializerSettings));
+            }
+            catch (Exception ex)
+            {
+                await Task.FromException(ex);
+            }
+            finally
+            {
+                e.FlightDone.FlightRunDone -= OnFlightRunDone;
+            }
         }
+
         private async Task OnStationChangedAsync(object? sender, StationChangedEventArgs e)
         {
             try
@@ -70,6 +87,11 @@ namespace Airport.Services
             {
                 await Task.FromException(ex);
             }
+        }
+        private void RegisterStationChanged(IEnumerable<IStationLogic> stationLogics)
+        {
+            foreach (var stationLogic in stationLogics)
+                stationLogic.StationChanged += OnStationChangedAsync;
         }
 
         private class StationChangedData

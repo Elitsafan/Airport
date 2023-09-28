@@ -58,7 +58,7 @@ namespace Airport.Simulator
                 .LaunchManyAsync(args)
                 .ToListAsync();
 #else
-            await flightLauncherService.SetFlightTimeout(/*, Models.Enums.FlightType.Departure*/);
+            await flightLauncherService.SetFlightTimeout(/*Models.Enums.FlightType.Departure*/);
 #endif
             await host.RunAsync();
         }

@@ -7,13 +7,17 @@ import { environment } from '../../environments/environment.development';
   providedIn: 'root'
 })
 export class SignalrService {
-  private dataSubject: BehaviorSubject<any>;
+  private stationChangedSubject: BehaviorSubject<any>;
+  private flightRunDoneSubject: BehaviorSubject<any>;
   private hubConnection: signalR.HubConnection | undefined;
-  data$?: Observable<any>;
+  stationChangedData$?: Observable<any>;
+  flightRunDoneData$: Observable<any>;
 
   constructor() {
-    this.dataSubject = new BehaviorSubject<any>(null!);
-    this.data$ = this.dataSubject.asObservable();
+    this.stationChangedSubject = new BehaviorSubject<any>(null!);
+    this.flightRunDoneSubject = new BehaviorSubject<any>(null!);
+    this.stationChangedData$ = this.stationChangedSubject.asObservable();
+    this.flightRunDoneData$ = this.flightRunDoneSubject.asObservable();
   }
 
   public startConnection = async () => {
@@ -24,14 +28,23 @@ export class SignalrService {
       .start()
       .then(() => {
         console.log('Connection started');
-        this.addStationChangedListener(data => this.dataSubject.next(JSON.parse(data)))
+        this.addStationChangedListener(data => this.stationChangedSubject.next(JSON.parse(data)))
+        this.addFlightRunDoneListener(data => this.flightRunDoneSubject.next(JSON.parse(data)))
       })
       .catch(err => console.log('Error while starting connection: ' + err));
   }
 
+  // Adds a listener to station changed event
   public addStationChangedListener(listener: (...args: any[]) => any) {
     if (!this.hubConnection)
       throw new Error("Connection didn't start yet")
     this.hubConnection?.on('StationChanged', listener);
+  }
+
+  // Adds a listener to flight run done event
+  public addFlightRunDoneListener(listener: (...args: any[]) => any) {
+    if (!this.hubConnection)
+      throw new Error("Connection didn't start yet")
+    this.hubConnection?.on('FlightRunDone', listener);
   }
 }

@@ -7,9 +7,11 @@ namespace Airport.Data.Repositories
 {
     public class TrafficLightRepository : ITrafficLightRepository
     {
+        #region Fields
         private readonly IAirportDbConfiguration _dbSettings;
         private readonly IMongoCollection<TrafficLight> _trafficLightsCollection;
-        private IMongoClient? _client;
+        private IMongoClient? _client; 
+        #endregion
 
         public TrafficLightRepository(IMongoClient client, IAirportDbConfiguration dbSettings)
         {

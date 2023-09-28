@@ -10,18 +10,21 @@ namespace Airport.Services.Factories
     {
         #region Fields
         private readonly IServiceProvider _serviceProvider;
+        private readonly IAirportHubHandlerRegistrar _airportHubHandlerRegistrar;
         private readonly IRouteLogicProvider _router;
         private readonly ILogger<IFlightLogic> _logger;
         #endregion
 
         public FlightLogicFactory(
             IServiceProvider serviceProvider,
+            IAirportHubHandlerRegistrar airportHubHandlerRegistrar,
             IRouteLogicProvider router,
             ILogger<IFlightLogic> logger)
         {
             _serviceProvider = serviceProvider;
-            _logger = logger;
+            _airportHubHandlerRegistrar = airportHubHandlerRegistrar;
             _router = router;
+            _logger = logger;
         }
         public IFlightLogic Create(Flight flight)
         {
@@ -32,8 +35,18 @@ namespace Airport.Services.Factories
 
             return flight switch
             {
-                Departure => new FlightLogic(repository, _router.DepartureRoutes.First(), _logger, flight),
-                Landing => new FlightLogic(repository, _router.LandingRoutes.First(), _logger, flight),
+                Departure => new FlightLogic(
+                    repository, 
+                    _router.DepartureRoutes.First(), 
+                    _logger, 
+                    _airportHubHandlerRegistrar,
+                    flight),
+                Landing => new FlightLogic(
+                    repository, 
+                    _router.LandingRoutes.First(),
+                    _logger,
+                    _airportHubHandlerRegistrar,
+                    flight),
                 _ => throw new ArgumentException()
             };
         }

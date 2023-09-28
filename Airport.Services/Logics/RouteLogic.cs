@@ -125,7 +125,7 @@ namespace Airport.Services.Logics
         public bool HasRightOfWay(IStationLogic? source, IStationLogic target)
         {
             if (!_trafficLightLogics.TryGetValue(target.StationId, out var trafficLightLogic))
-                throw new Exception("Traffic logic not found.");
+                throw new Exception("Trafficlight logic not found.");
             // When source is null,
             // cheks with other routes/stations and their flight type
             return source is null

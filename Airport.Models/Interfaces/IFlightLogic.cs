@@ -25,7 +25,7 @@ namespace Airport.Models.Interfaces
         /// Runs the current instance
         /// </summary>
         Task Run();
-        void OccupyStation(ObjectId stationId, DateTime time);
-        void UnoccupyStation(ObjectId stationId, DateTime time);
+        void OccupyStation(ObjectId stationId, DateTime entranceTime);
+        void UnoccupyStation(ObjectId stationId, DateTime exitTime);
     }
 }

@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FlightService } from '../../../services/flight.service';
-import { Departure } from '../../models/departure.model.ts';
-import { Landing } from '../../models/landing.model.ts';
+import { FlightType } from '../../../types/flight.type';
+import { Flight } from '../../models/flight.model.ts';
 
 @Component({
   selector: 'flights-index',
@@ -11,11 +11,13 @@ import { Landing } from '../../models/landing.model.ts';
 })
 export class FlightsIndexComponent {
 
-  landings$?: Observable<Landing[]>;
-  departures$?: Observable<Departure[]>;
+  flights$?: Observable<Flight[]>;
+  departure: FlightType;
+  landing: FlightType;
 
   constructor(private flightSvc: FlightService) {
-    this.landings$ = this.flightSvc.landings$;
-    this.departures$ = this.flightSvc.departures$;
+    this.flights$ = this.flightSvc.flights$;
+    this.departure = "Departure";
+    this.landing = "Landing";
   }
 }

@@ -1,8 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, lastValueFrom, Observable, Subscription } from 'rxjs';
-import { Departure } from '../flight-module/models/departure.model.ts';
-import { Landing } from '../flight-module/models/landing.model.ts';
+import { Flight } from '../flight-module/models/flight.model.ts';
 import { IFlight } from '../interfaces/iflight.interface';
 import { Station } from '../station-module/models/station.model';
 import { AirportService } from './airport.service';
@@ -27,8 +26,17 @@ export class StationService implements OnDestroy {
     this.stations$ = this.stationsSubject.asObservable();
   }
 
-  public loadData(): Promise<void> {
-    return this.fetch()
+  public fetch(): Promise<void> {
+    return lastValueFrom(this.airportSvc.getStatus())
+      .then((airport) => {
+        //console.log(airport)
+        this.stations = airport!.stations.map(
+          station => new Station(
+            station.stationId,
+            this.flightResolver(station.flight)));
+        this.stationsSubject.next(this.stations);
+      })
+      .catch((error: HttpErrorResponse) => console.error(error));
   }
 
   public startService(): Promise<void> {
@@ -41,31 +49,21 @@ export class StationService implements OnDestroy {
     this.stationsSubscription?.unsubscribe();
   }
 
-  private fetch() {
-    return lastValueFrom(this.airportSvc.getStatus())
-      .then((airport) => {
-        console.log(airport)
-        this.stations = airport!.stations.map(
-          station => new Station(
-            station.stationId,
-            this.flightResolver(station.flight)));
-        this.stationsSubject.next(this.stations);
-      })
-      .catch((error: HttpErrorResponse) => console.error(error));
-  }
-
   private flightResolver(flight?: IFlight) {
     return flight
-      ? flight.flightType === 'Departure'
-        ? new Departure(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
-        : new Landing(flight.flightId, flight.stationId, this.colorSvc.getColor(flight.flightId, flight.flightType))
+      ? new Flight(
+        flight.flightId,
+        flight.stationId,
+        flight.flightType,
+        this.colorSvc.getColor(flight.flightId, flight.flightType))
       : undefined;
   }
 
   private handleStationsSubscription() {
-    this.stationsSubscription = this.signalRSvc.data$
-      ?.subscribe((stations: any/*Station[]*/) => {
-        this.stations?.forEach((station, i) => station.flight = this.flightResolver(stations[i].flight))
+    this.stationsSubscription = this.signalRSvc.stationChangedData$
+      ?.subscribe((stations: Station[]) => {
+        if (stations)
+          this.stations?.forEach((station, i) => station.flight = this.flightResolver(stations[i].flight))
         this.stationsSubject.next(this.stations);
       })
   }

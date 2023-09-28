@@ -7,9 +7,11 @@ namespace Airport.Data.Repositories
 {
     public class StationRepository : IStationRepository
     {
+        #region Fields
         private readonly IMongoCollection<Station> _stationsCollection;
         private readonly IMongoCollection<Route> _routesCollection;
-        private IMongoClient? _client;
+        private IMongoClient? _client; 
+        #endregion
 
         public StationRepository(IMongoClient client, IAirportDbConfiguration dbSettings)
         {

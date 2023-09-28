@@ -13,6 +13,7 @@
         private Mock<IStationLogicProvider> _stationLogicProviderMock;
         private Mock<IDirectionLogicProvider> _directionLogicProviderMock;
         private Mock<ITrafficLightLogicProvider> _trafficLightLogicProviderMock;
+        private Mock<IAirportHubHandlerRegistrar> _airportHubHandlerRegistrarMock;
         private bool _onFlightRunDoneEventRaised;
         private ObjectId _routeLogicId;
 
@@ -28,8 +29,10 @@
             _stationLogicProviderMock = new Mock<IStationLogicProvider>();
             _directionLogicProviderMock = new Mock<IDirectionLogicProvider>();
             _trafficLightLogicProviderMock = new Mock<ITrafficLightLogicProvider>();
+            _airportHubHandlerRegistrarMock = new Mock<IAirportHubHandlerRegistrar>();
 
             var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IAirportHubHandlerRegistrar>(_airportHubHandlerRegistrarMock.Object);
             serviceCollection.AddSingleton<ILogger<IFlightLogic>>(factory => new Mock<ILogger<IFlightLogic>>().Object);
             serviceCollection.AddSingleton<ILogger<StationLogic>>(factory => new Mock<ILogger<StationLogic>>().Object);
             serviceCollection.AddSingleton<IRouteLogicProvider>(factory => _routeLogicProviderMock.Object);
@@ -80,13 +83,14 @@
                 }.AsEnumerable());
             Flight flight = new Departure();
             var logger = _serviceProvider.GetRequiredService<ILogger<IFlightLogic>>();
+            var airportHubHandlerRegistrar = _serviceProvider.GetRequiredService<IAirportHubHandlerRegistrar>();
             var routeLogicProvider = _serviceProvider.GetRequiredService<IRouteLogicProvider>();
             var routeLogic = routeLogicProvider.DepartureRoutes.First();
             var flightRepository = _serviceProvider
                 .CreateAsyncScope()
                 .ServiceProvider
                 .GetRequiredService<IFlightRepository>();
-            _flightLogic = new FlightLogic(flightRepository, routeLogic, logger, flight);
+            _flightLogic = new FlightLogic(flightRepository, routeLogic, logger, airportHubHandlerRegistrar, flight);
         }
 
         [Fact]

@@ -20,7 +20,8 @@ namespace Airport.Services.Mappers
 
         public Flight Map(IFlight model)
         {
-            if (model == null) throw new ArgumentNullException(nameof(model));
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
             var creator = _flightCreatorMapper.Map(_flightCreatorFactory.GetConcreteCreator(model));
             var createdFlight = creator.CreateFlight();
             createdFlight.FlightId = model.FlightId;
@@ -28,7 +29,8 @@ namespace Airport.Services.Mappers
         }
         public IFlight Map(Flight entity)
         {
-            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            if (entity == null) 
+                throw new ArgumentNullException(nameof(entity));
             var creator = _flightCreatorMapper.Map(_flightCreatorFactory.GetConcreteCreator(entity));
             var createdFlight = creator.Create();
             createdFlight.FlightId = entity.FlightId;

@@ -14,8 +14,7 @@ export const environment = {
     "#c2aa24",
     "#97841c",
     "#6c5f14",
-    "#efe5a9",
-    "#f7f0d4",
+    //"#efe5a9",
   ],
   departureColors: [
     "#e8b0bd",

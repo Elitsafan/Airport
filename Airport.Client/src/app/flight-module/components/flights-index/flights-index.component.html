@@ -1,4 +1,4 @@
 <div class="d-flex flex-row justify-content-center">
-  <flight-list class="ms-2 me-2 bg-info" [hideFlightType]="true" [title]="'Landings'" [flights]="landings$"></flight-list>
-  <flight-list class="ms-2 me-2 bg-danger" [hideFlightType]="true" [title]="'Departures'" [flights]="departures$"></flight-list>
+  <flight-list class="ms-2 me-2 bg-info" [hideFlightType]="true" [title]="'Landings'" [flightType]="landing" [flights]="flights$"></flight-list>
+  <flight-list class="ms-2 me-2 bg-danger" [hideFlightType]="true" [title]="'Departures'" [flightType]="departure" [flights]="flights$"></flight-list>
 </div>

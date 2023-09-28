@@ -87,7 +87,7 @@ namespace Airport.Services.Logics
                 var del = list.FirstOrDefault(d => d.Target == _flightLogic);
                 await Task.FromResult(del?.DynamicInvoke(new object[] { this, new StationChangedEventArgs(flight) }));
                 await Task.WhenAll(list
-                    .Where(d => d != del)
+                    .Where(d => !ReferenceEquals(d, del))
                     .Select(d => Task.FromResult(
                         d?.DynamicInvoke(new object[] { this, new StationChangedEventArgs(flight) }))));
             }

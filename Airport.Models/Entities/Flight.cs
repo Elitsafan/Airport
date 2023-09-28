@@ -22,6 +22,7 @@ namespace Airport.Models.Entities
                 _stationOccupationDetails ??= new List<StationOccupationDetails>();
                 return _stationOccupationDetails;
             }
+            set => _stationOccupationDetails = value;
         }
     }
 }

@@ -7,8 +7,10 @@ namespace Airport.Data.Repositories
 {
     public class RouteRepository : IRouteRepository
     {
+        #region Fields
         private readonly IMongoCollection<Route> _routesCollection;
         private IMongoClient? _client;
+        #endregion
 
         public RouteRepository(IMongoClient client, IAirportDbConfiguration dbSettings)
         {

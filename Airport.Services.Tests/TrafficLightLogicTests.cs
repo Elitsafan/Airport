@@ -15,7 +15,7 @@ namespace Airport.Services.Tests
         private Mock<IRouteRepository> _routeRepository;
         private Mock<IFlightLogic> _flightLogicMock;
         private ObjectId[] _ids;
-        private ObjectId _trafficLightId1;
+        //private ObjectId _trafficLightId1;
         private Route[] _routes;
         #endregion
 
@@ -55,7 +55,7 @@ namespace Airport.Services.Tests
             _trafficLight = new TrafficLight
             {
                 StationId = _ids[1],
-                TrafficLightId = _trafficLightId1,
+                //TrafficLightId = _trafficLightId1,
             };
             _routes = new[]
             {

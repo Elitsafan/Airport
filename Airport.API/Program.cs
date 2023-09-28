@@ -11,7 +11,6 @@ using Airport.Services.Mappers;
 using Airport.Services.Providers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.Threading;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 
@@ -19,10 +18,12 @@ namespace Airport.API
 {
     public class Program
     {
-        private static string defaultClientOrigin = "DefaultClientOrigin";
-        private static string defaultConnectionString = "Default";
+        #region Fields
+        private static string _defaultClientOrigin = "DefaultClientOrigin";
+        private static string _defaultConnectionString = "Default";
+        #endregion
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             // Global exception handling
             AppDomain.CurrentDomain.UnhandledException += GlobalUnhandledExceptionHandler;
@@ -35,7 +36,7 @@ namespace Airport.API
                 options.AddDefaultPolicy(
                     builder =>
                     {
-                        builder.WithOrigins(Configuration.GetValue<string>(defaultClientOrigin)!)
+                        builder.WithOrigins(Configuration.GetValue<string>(_defaultClientOrigin)!)
                             .AllowAnyHeader()
                             .WithMethods("GET")
                             .AllowCredentials();
@@ -46,7 +47,7 @@ namespace Airport.API
             builder.Services.AddSingleton<IAirportDbConfiguration>(
                 provider => provider.GetRequiredService<IOptions<AirportDbConfiguration>>().Value);
             builder.Services.AddSingleton<IMongoClient>(
-                provider => new MongoClient(Configuration.GetConnectionString(defaultConnectionString)));
+                provider => new MongoClient(Configuration.GetConnectionString(_defaultConnectionString)));
             builder.Services.AddSingleton<IAirportDbContextSetup, AirportDbContextSetup>();
             builder.Services.AddSingleton<IRouteLogicFactory, RouteLogicFactory>();
             builder.Services.AddSingleton<IFlightLogicFactory, FlightLogicFactory>();
@@ -66,6 +67,7 @@ namespace Airport.API
             builder.Services.AddScoped<ITrafficLightRepository, TrafficLightRepository>();
             builder.Services.AddScoped<IEntityMapper<Flight, IFlight>, FlightMapper>();
             builder.Services.AddScoped<IEntityMapper<Station, StationDTO>, StationMapper>();
+            builder.Services.AddScoped<IEntityMapper<Models.Entities.Route, RouteDTO>, RouteMapper>();
             builder.Services.AddScoped<IEntityMapper<IFlightCreator, IFlightDTOFactory>, FlightCreatorAdapter>();
             builder.Services.AddControllers()
                 .AddNewtonsoftJson(options =>
@@ -74,13 +76,17 @@ namespace Airport.API
                 });
             var app = builder.Build();
 
+            // Airport db initializiation
+            await AirportDbInitialization(app);
+
             app.UseCors();
             app.MapControllers();
             app.MapHub<AirportHub>("/airporthub");
-            app.Run();
+            await app.RunAsync();
         }
 
         private static IConfiguration Configuration { get; set; } = null!;
+
         // Exception handler
         private static void GlobalUnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
         {
@@ -88,6 +94,13 @@ namespace Airport.API
             Console.WriteLine("Press Enter to Exit");
             Console.ReadLine();
             Environment.Exit(0);
+        }
+        private static async Task AirportDbInitialization(WebApplication app)
+        {
+            var dbContext = app.Services
+                .GetRequiredService<IAirportDbContextSetup>();
+            await dbContext.DropDatabaseAsync();
+            await dbContext.SeedDatabaseAsync();
         }
     }
 }

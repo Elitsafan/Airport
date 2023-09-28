@@ -1,16 +1,24 @@
 ﻿using Airport.Models.Entities;
 using Airport.Models.Interfaces;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 namespace Airport.Data.Repositories
 {
     public class FlightRepository : IFlightRepository
     {
+        #region Fields
+        private readonly ILogger<FlightRepository> _logger;
         private readonly IMongoCollection<Flight> _flightsCollection;
         private IMongoClient? _client;
+        #endregion
 
-        public FlightRepository(IMongoClient client, IAirportDbConfiguration dbSettings)
+        public FlightRepository(
+            ILogger<FlightRepository> logger,
+            IMongoClient client,
+            IAirportDbConfiguration dbSettings)
         {
+            _logger = logger;
             _client = client;
             _flightsCollection = _client
                 .GetDatabase(dbSettings.DatabaseName)
@@ -37,8 +45,9 @@ namespace Airport.Data.Repositories
                     new UpdateOptions { IsUpsert = false });
                 return updateResult.MatchedCount > 0;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.LogError(null, e);
                 return false;
             }
 

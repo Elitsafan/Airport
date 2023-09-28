@@ -23,7 +23,7 @@ export class StationIndexComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.stationSvc.startService();
-    await this.stationSvc.loadData();
+    await this.stationSvc.fetch();
     // Maps stations
     this.commonStations$ = this.stationSvc.stations$
       ?.pipe(

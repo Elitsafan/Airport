@@ -2,6 +2,7 @@
 {
     public interface IAirportDbContextSetup
     {
-        Task SeedAsync();
+        Task DropDatabaseAsync();
+        Task SeedDatabaseAsync();
     }
 }

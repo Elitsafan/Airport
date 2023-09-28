@@ -26,6 +26,7 @@ namespace Airport.Services.Logics
             IFlightRepository repository,
             IRouteLogic routeLogic,
             ILogger<IFlightLogic> logger,
+            IAirportHubHandlerRegistrar airportHubHandlerRegistrar,
             Flight flight)
         {
             _flightRepository = repository;
@@ -46,6 +47,7 @@ namespace Airport.Services.Logics
             foreach (var kvp in _newFlightGates)
                 kvp.Value.Set();
             _syncEntrance = new AsyncSemaphore(1);
+            FlightRunDone += airportHubHandlerRegistrar.OnFlightRunDone;
         }
 
         #region Properties
@@ -60,6 +62,7 @@ namespace Airport.Services.Logics
             try
             {
                 var startStations = _routeLogic.GetStartStations();
+                // if there are any stations, tries to enter any
                 if (startStations is not null && startStations.Any())
                     await TryEnterStation(startStations);
             }
@@ -83,21 +86,21 @@ namespace Airport.Services.Logics
             }
             finally { releaser.Dispose(); }
         }
-        public void OccupyStation(ObjectId stationId, DateTime time)
+        public void OccupyStation(ObjectId stationId, DateTime entranceTime)
         {
             if (Flight.StationOccupationDetails.Exists(wd => wd.StationId == stationId))
                 throw new InvalidOperationException("Station already occupied");
             Flight.StationOccupationDetails.Add(new StationOccupationDetails
             {
                 StationId = stationId,
-                Entrance = time
+                Entrance = entranceTime
             });
         }
-        public void UnoccupyStation(ObjectId stationId, DateTime time)
+        public void UnoccupyStation(ObjectId stationId, DateTime exitTime)
         {
-            var result = Flight.StationOccupationDetails.Find(wd => wd.StationId == stationId)
+            var stationOccupationDetails = Flight.StationOccupationDetails.Find(wd => wd.StationId == stationId)
                 ?? throw new InvalidOperationException("Station not found");
-            result.Exit = time;
+            stationOccupationDetails.Exit = exitTime;
         }
         public void Dispose()
         {
@@ -105,13 +108,13 @@ namespace Airport.Services.Logics
             _syncEntrance.Dispose();
             _rightOfWay.Dispose();
         }
-
+        // Recursive-like logic of stations entrance
         private async Task TryEnterStation(IEnumerable<IStationLogic> stations)
         {
             try
             {
                 bool isNewFlight = CurrentStation is null;
-                CurrentStation = await PerformParallelEntrance(stations);
+                CurrentStation = await PerformParallelEntranceToStations(stations);
                 // No need the right of way anymore
                 _rightOfWay.Dispose();
                 if (isNewFlight)
@@ -122,6 +125,7 @@ namespace Airport.Services.Logics
                 // Waits 
                 await WaitOnStation(CurrentStation.EstimatedWaitingTime);
                 var nextStations = _routeLogic.GetNextStationsOf(CurrentStation);
+                // Enter to the next stations or the run is done
                 _ = nextStations.Any()
                     ? TryEnterStation(nextStations)
                     : EndRun();
@@ -132,7 +136,7 @@ namespace Airport.Services.Logics
                 await Task.FromException(e);
             }
         }
-
+        // Finishes the run
         private async Task EndRun()
         {
             // Exits from the last station
@@ -151,13 +155,14 @@ namespace Airport.Services.Logics
             foreach (var station in _routeLogic.GetStartStations())
                 station.StationChanged -= RegisterFlight;
         }
-        private async Task<IStationLogic> PerformParallelEntrance(IEnumerable<IStationLogic> stations)
+        private async Task<IStationLogic> PerformParallelEntranceToStations(IEnumerable<IStationLogic> stations)
         {
             // An entrance to a only one station does not need a cancellation
             using var cts = stations.Count() == 1 ? null : new CancellationTokenSource();
             var entranceAttempts = stations
                 .Select(s => Task.Run(async () => await EnterStationAsync(s, cts)))
                 .ToList();
+            // Filters the attempts until there is a success
             while (entranceAttempts.Count > 0)
             {
                 var enteredStation = await Task.WhenAny(entranceAttempts);
@@ -169,11 +174,13 @@ namespace Airport.Services.Logics
             }
             throw new Exception("Couldn't enter any of the stations");
         }
+
         private async Task<IStationLogic> EnterStationAsync(IStationLogic target, CancellationTokenSource? cts)
         {
             _rightOfWay = await _routeLogic.GetRightOfWay(CurrentStation, target, cts is null ? default : cts.Token);
             // flight is a new one
-            if (CurrentStation == null)
+            bool isNewFlight = CurrentStation == null;
+            if (isNewFlight)
                 // Waits for the gate to open
                 await _newFlightGates[target.StationId].WaitAsync(cts is null ? default : cts.Token);
             try
@@ -183,7 +190,7 @@ namespace Airport.Services.Logics
             catch (OperationCanceledException)
             {
                 // Opens back the gate if it is a new flight
-                if (CurrentStation is null)
+                if (isNewFlight)
                     _newFlightGates[target.StationId].Set();
                 _rightOfWay.Dispose();
                 throw;
@@ -191,7 +198,7 @@ namespace Airport.Services.Logics
             catch (ObjectDisposedException)
             {
                 // Opens back the gate if it is a new flight
-                if (CurrentStation is null)
+                if (isNewFlight)
                     _newFlightGates[target.StationId].Set();
                 _rightOfWay.Dispose();
                 throw;
@@ -199,6 +206,10 @@ namespace Airport.Services.Logics
             catch (Exception e)
             {
                 _logger.LogError(e, null);
+                // Opens back the gate if it is a new flight
+                if (isNewFlight)
+                    _newFlightGates[target.StationId].Set();
+                _rightOfWay.Dispose();
                 throw;
             }
         }

@@ -14,22 +14,28 @@ namespace Airport.Services
         private readonly IAirportDbContextSetup _dbSetup;
         private readonly IStationRepository _stationRepository;
         private readonly IFlightRepository _flightRepository;
+        private readonly IRouteRepository _routeRepository;
         private readonly IEntityMapper<Flight, IFlight> _flightMapper;
         private readonly IEntityMapper<Station, StationDTO> _stationMapper;
+        private readonly IEntityMapper<Route, RouteDTO> _routeMapper;
         #endregion
 
         public AirportService(
             IAirportDbContextSetup dbSetup,
             IStationRepository stationRepository,
             IFlightRepository flightRepository,
+            IRouteRepository routeRepository,
             IEntityMapper<Flight, IFlight> flightMapper,
-            IEntityMapper<Station, StationDTO> stationMapper)
+            IEntityMapper<Station, StationDTO> stationMapper,
+            IEntityMapper<Route, RouteDTO> routeMapper)
         {
             _dbSetup = dbSetup;
             _stationRepository = stationRepository;
             _flightRepository = flightRepository;
+            _routeRepository = routeRepository;
             _flightMapper = flightMapper;
             _stationMapper = stationMapper;
+            _routeMapper = routeMapper;
         }
 
         public bool HasStarted => _hasStarted;
@@ -48,6 +54,11 @@ namespace Airport.Services
                 .OfTypeAsync<Departure>())
                 .Select(_flightMapper.Map)
                 .ToList();
+            List<RouteDTO> routes = (await _routeRepository
+                .GetAllAsync())
+                .Select(_routeMapper.Map)
+                .ToList();
+
             return new JsonResult(null)
             {
                 ContentType = "application/json",
@@ -55,7 +66,8 @@ namespace Airport.Services
                 {
                     stations,
                     landings,
-                    departures
+                    departures,
+                    routes
                 },
                 StatusCode = StatusCodes.Status200OK
             };
@@ -108,7 +120,7 @@ namespace Airport.Services
                 };
             try
             {
-                await _dbSetup.SeedAsync();
+                await _dbSetup.SeedDatabaseAsync();
             }
             catch (Exception)
             {

@@ -8,8 +8,10 @@ namespace Airport.API.Controllers
     [ApiController]
     public class AirportController : ControllerBase
     {
+        #region Fields
         private readonly IAirportService _airportService;
-        private readonly ILogger<AirportController> _logger;
+        private readonly ILogger<AirportController> _logger; 
+        #endregion
 
         public AirportController(
             IAirportService airportService,
@@ -34,7 +36,6 @@ namespace Airport.API.Controllers
 
         // GET: api/Airport/Summary
         [HttpGet("Summary", Name = nameof(Summary))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> Summary() => !_airportService.HasStarted
