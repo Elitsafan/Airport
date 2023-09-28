@@ -7,5 +7,22 @@ export const environment = {
   timeout: {
     minutes: 1,
     hours: 0
-  }
+  },
+  landingColors: [
+    "#e3d168",
+    "#dbc43d",
+    "#c2aa24",
+    "#97841c",
+    "#6c5f14",
+    //"#efe5a9",
+  ],
+  departureColors: [
+    "#e8b0bd",
+    "#dd889c",
+    "#d2607b",
+    "#c73859",
+    "#9f2d48",
+    "#772236",
+    "#501624",
+  ]
 };

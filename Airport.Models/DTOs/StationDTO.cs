@@ -1,14 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using MongoDB.Bson;
+using Newtonsoft.Json;
 
 namespace Airport.Models.DTOs
 {
     public class StationDTO
     {
-        public int StationId { get; set; }
-        [JsonIgnore]
-        public DateTime? EntranceTime { get; set; }
-        [JsonIgnore]
-        public DateTime? ExitTime { get; set; }
+        public ObjectId StationId { get; set; }
         [JsonIgnore]
         public TimeSpan WaitingTime { get; set; }
     }

@@ -6,26 +6,23 @@ namespace Airport.Services.Mappers
 {
     public class StationMapper : IEntityMapper<Station, StationDTO>
     {
-        public Task<Station> MapAsync(StationDTO model)
+        public Station Map(StationDTO model)
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
-            return Task.FromResult(new Station
+            return new Station
             {
                 StationId = model.StationId,
                 EstimatedWaitingTime = model.WaitingTime,
-                Entrance = model.EntranceTime,
-                Exit = model.ExitTime,
-            });
+            };
         }
+
         public StationDTO Map(Station entity)
         {
             if (entity == null) throw new ArgumentNullException(nameof(entity));
             return new StationDTO
             {
-                WaitingTime = entity.EstimatedWaitingTime,
-                EntranceTime = entity.Entrance,
-                ExitTime = entity.Exit,
                 StationId = entity.StationId,
+                WaitingTime = entity.EstimatedWaitingTime,
             };
         }
         public void Dispose()

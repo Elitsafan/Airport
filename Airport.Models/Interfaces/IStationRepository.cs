@@ -1,10 +1,10 @@
 ﻿using Airport.Models.Entities;
+using MongoDB.Bson;
 
 namespace Airport.Models.Interfaces
 {
     public interface IStationRepository : IRepository<Station>
     {
-        Task<int> SaveChangesAsync();
-        Task UpdateStationAsync(Station station);
+        Task<IEnumerable<Station>> GetStationsByRouteIdAsync(ObjectId routeId);
     }
 }

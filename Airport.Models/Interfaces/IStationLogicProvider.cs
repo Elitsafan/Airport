@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using MongoDB.Bson;
+using System.Linq.Expressions;
 
 namespace Airport.Models.Interfaces
 {
@@ -9,10 +10,9 @@ namespace Airport.Models.Interfaces
         /// </summary>
         /// <param name="routeId"></param>
         /// <returns></returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        Task<IEnumerable<IStationLogic>> FindByRouteId(int routeId);
-        IQueryable<IStationLogic> GetAll();
-        IStationLogic? FindById(int id);
-        IQueryable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate);
+        Task<IEnumerable<IStationLogic>> FindByRouteIdAsync(ObjectId routeId);
+        IEnumerable<IStationLogic> GetAll();
+        IEnumerable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate);
+        Task<IEnumerable<IStationLogic>> GetStationsByTargetAndRouteAsync(ObjectId stationLogicId, ObjectId routeId);
     }
 }

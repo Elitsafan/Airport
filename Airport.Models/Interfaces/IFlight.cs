@@ -1,10 +1,11 @@
 ﻿using Airport.Models.Enums;
+using MongoDB.Bson;
 
 namespace Airport.Models.Interfaces
 {
     public interface IFlight
     {
-        Guid FlightId { get; set; }
+        ObjectId FlightId { get; set; }
         FlightType FlightType { get; }
     }
 }

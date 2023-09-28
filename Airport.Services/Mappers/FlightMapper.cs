@@ -18,17 +18,19 @@ namespace Airport.Services.Mappers
             _flightCreatorMapper = creatorMapper;
         }
 
-        public async Task<Flight> MapAsync(IFlight model)
+        public Flight Map(IFlight model)
         {
-            if (model == null) throw new ArgumentNullException(nameof(model));
-            var creator = await _flightCreatorMapper.MapAsync(_flightCreatorFactory.GetConcreteCreator(model));
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
+            var creator = _flightCreatorMapper.Map(_flightCreatorFactory.GetConcreteCreator(model));
             var createdFlight = creator.CreateFlight();
             createdFlight.FlightId = model.FlightId;
             return createdFlight;
         }
         public IFlight Map(Flight entity)
         {
-            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            if (entity == null) 
+                throw new ArgumentNullException(nameof(entity));
             var creator = _flightCreatorMapper.Map(_flightCreatorFactory.GetConcreteCreator(entity));
             var createdFlight = creator.Create();
             createdFlight.FlightId = entity.FlightId;

@@ -1,61 +1,66 @@
 ﻿using Airport.Models.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Airport.Models.Interfaces;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Airport.Data.Configurations
 {
-    internal class StationConfiguration : IEntityTypeConfiguration<Station>
+    internal class StationConfiguration
     {
-        public void Configure(EntityTypeBuilder<Station> builder)
+        public async Task ConfigureAsync(IMongoClient client, IAirportDbConfiguration dbSettings)
         {
-            builder.HasKey(e => e.StationId);
-
-            builder.HasData(
-                new
+            var stationsCollection = client
+                .GetDatabase(dbSettings.DatabaseName)
+                .GetCollection<Station>(dbSettings.StationsCollectionName);
+            var data = new List<Station>
+            {
+                new Station
                 {
-                    StationId = 1,
+                    StationId = new ObjectId("000000000000000000000001"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
-                new
+                new Station
                 {
-                    StationId = 2,
+                    StationId = new ObjectId("000000000000000000000002"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
-                new
+                new Station
                 {
-                    StationId = 3,
+                    StationId = new ObjectId("000000000000000000000003"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
-                new
+                new Station
                 {
-                    StationId = 4,
+                    StationId = new ObjectId("000000000000000000000004"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(900),
                 },
-                new
+                new Station
                 {
-                    StationId = 5,
+                    StationId = new ObjectId("000000000000000000000005"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
-                new
+                new Station
                 {
-                    StationId = 6,
+                    StationId = new ObjectId("000000000000000000000006"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(1200),
                 },
-                new
+                new Station
                 {
-                    StationId = 7,
+                    StationId = new ObjectId("000000000000000000000007"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(1200),
                 },
-                new
+                new Station
                 {
-                    StationId = 8,
+                    StationId = new ObjectId("000000000000000000000008"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(600),
                 },
-                new
+                new Station
                 {
-                    StationId = 9,
+                    StationId = new ObjectId("000000000000000000000009"),
                     EstimatedWaitingTime = TimeSpan.FromMilliseconds(500),
-                });
+                }
+            };
+            await stationsCollection.InsertManyAsync(data);
         }
     }
 }

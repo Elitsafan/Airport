@@ -1,7 +1,9 @@
-﻿namespace Airport.Models.Interfaces
+﻿using MongoDB.Bson;
+
+namespace Airport.Models.Interfaces
 {
     public interface IRouteLogicFactory
     {
-        IRouteLogicCreator GetCreator(int routeId, string routeName);
+        IRouteLogicCreator GetCreator(ObjectId routeId, string routeName);
     }
 }

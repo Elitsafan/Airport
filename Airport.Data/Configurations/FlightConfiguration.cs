@@ -1,21 +1,10 @@
-﻿using Airport.Models.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Airport.Models.Interfaces;
+using MongoDB.Driver;
 
 namespace Airport.Data.Configurations
 {
-    internal class FlightConfiguration : IEntityTypeConfiguration<Flight>
+    internal class FlightConfiguration
     {
-        public void Configure(EntityTypeBuilder<Flight> builder)
-        {
-            builder.HasKey(e => e.FlightId);
-            builder.UseTpcMappingStrategy();
-
-            builder.HasMany(e => e.Stations)
-                .WithMany(e => e.Flights)
-                .UsingEntity<StationFlight>(
-                l => l.HasOne<Station>().WithMany().HasForeignKey(e => e.StationId),
-                r => r.HasOne<Flight>().WithMany().HasForeignKey(e => e.FlightId));
-        }
+        public async Task ConfigureAsync(IMongoClient client, IAirportDbConfiguration dbSettings) => await Task.CompletedTask;
     }
 }

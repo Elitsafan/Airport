@@ -22,7 +22,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe({
         next: async (res) => {
           await this.signalRSvc.startConnection();
-          console.log(res);
+          //console.log(res);
         },
         error: (error) => {
           console.log(error)

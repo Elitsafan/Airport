@@ -9,7 +9,7 @@ import { Station } from '../../models/station.model';
 export class StationListComponent {
   @Input() stations?: Station[];
 
-  trackByStationId(index: number, station: Station): number {
+  trackByStationId(index: number, station: Station): string {
     return station.stationId;
   }
 }

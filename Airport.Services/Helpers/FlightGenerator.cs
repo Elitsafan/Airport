@@ -8,8 +8,8 @@ namespace Airport.Services.Helpers
     {
         // Generates a single flight
         private IFlight GenerateFlight(FlightType flightType) => flightType == FlightType.Landing
-            ? new LandingDTO { FlightId = Guid.NewGuid() }
-            : new DepartureDTO { FlightId = Guid.NewGuid() };
+            ? new LandingDTO()
+            : new DepartureDTO();
         // Generates a list of flights
         public IEnumerable<IFlight> GenerateFlights(int n)
         {

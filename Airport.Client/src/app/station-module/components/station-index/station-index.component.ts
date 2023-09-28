@@ -23,23 +23,23 @@ export class StationIndexComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.stationSvc.startService();
-    await this.stationSvc.loadData();
+    await this.stationSvc.fetch();
     // Maps stations
     this.commonStations$ = this.stationSvc.stations$
       ?.pipe(
         map(stations => stations?.filter(
-          e => e.stationId === 4 || e.stationId === 6 || e.stationId === 7)));
+          e => e.stationId.endsWith("4") || e.stationId.endsWith("6") || e.stationId.endsWith("7"))));
     this.endStationsLanding$ = this.stationSvc.stations$
       ?.pipe(
         map(stations => stations?.filter(
-          e => e.stationId < 4)));
+          e => Number.parseInt(e.stationId) < 4)));
     this.endStationsDeparture$ = this.stationSvc.stations$
       ?.pipe(
         map(stations => stations?.filter(
-          e => e.stationId === 9)));
+          e => e.stationId.endsWith("9"))));
     this.middleStations$ = this.stationSvc.stations$
       ?.pipe(
         map(stations => stations?.filter(
-          e => e.stationId === 5 || e.stationId === 8)));
+          e => e.stationId.endsWith("5") || e.stationId.endsWith("8"))));
   }
 }

@@ -1,5 +1,6 @@
 ﻿using Airport.Models.Entities;
 using Airport.Models.Interfaces;
+using MongoDB.Bson;
 
 namespace Airport.Services.Logics
 {
@@ -7,9 +8,7 @@ namespace Airport.Services.Logics
     {
         private readonly Direction _direction;
         public DirectionLogic(Direction direction) => _direction = direction;
-        public int DirectionId => _direction.DirectionId;
-        public int? From => _direction.From;
-        public int? To => _direction.To;
-        public int? RouteId => _direction.RouteId;
+        public ObjectId From => _direction.From;
+        public ObjectId To => _direction.To;
     }
 }

@@ -1,7 +1,7 @@
 <div class="container">
   <h2 class="text-center">{{title}}</h2>
   <div class="container" *ngIf="(flights | async)?.length; else nothingToDisplay">
-    <ng-container *ngFor="let flight of flights | async; trackBy: trackByFlightId">
+    <ng-container *ngFor="let flight of (flights | async)!.filter(filter); trackBy: trackByFlightId">
       <flight [hideFlightType]="hideFlightType" [flight]="flight"></flight>
     </ng-container>
   </div>

@@ -1,4 +1,6 @@
-﻿namespace Airport.Models.Interfaces
+﻿using MongoDB.Bson;
+
+namespace Airport.Models.Interfaces
 {
     public interface ITrafficLightLogicProvider
     {
@@ -7,6 +9,6 @@
         /// </summary>
         /// <param name="routeId"></param>
         /// <returns></returns>
-        IEnumerable<ITrafficLightLogic> FindByRouteId(int routeId);
+        Task<IEnumerable<ITrafficLightLogic>> FindByRouteIdAsync(ObjectId routeId);
     }
 }

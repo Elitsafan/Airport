@@ -4,5 +4,6 @@
     {
         IEnumerable<IRouteLogic> LandingRoutes { get; }
         IEnumerable<IRouteLogic> DepartureRoutes { get; }
+        IEnumerable<IRouteLogic> AllRoutes { get; }
     }
 }

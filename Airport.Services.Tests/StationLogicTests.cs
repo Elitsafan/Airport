@@ -1,12 +1,4 @@
-﻿using Airport.Models.Entities;
-using Airport.Models.Interfaces;
-using Airport.Services.Logics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Moq;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Airport.Services.Tests
+﻿namespace Airport.Services.Tests
 {
     public class StationLogicTests : IDisposable
     {
@@ -27,18 +19,20 @@ namespace Airport.Services.Tests
             _cts = new CancellationTokenSource();
             _onStationChangedEventRaised = false;
             _countStationChangedRaised = 0;
-            _station = new Station { StationId = 1 };
+            _station = new Station { StationId = new ObjectId("000000000000000000000001") };
             _flightLogicMock = new Mock<IFlightLogic>();
+            _flightLogicMock
+                .SetupGet(x => x.CurrentStation)
+                .Returns(() => new Mock<IStationLogic>().Object);
 
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
-            serviceCollection.AddScoped<IStationRepository>((factory) => new Mock<IStationRepository>().Object);
-            serviceCollection.AddScoped<IStationFlightRepository>((factory) => new Mock<IStationFlightRepository>().Object);
-            serviceCollection.AddScoped<IFlightLogic>((logic) => _flightLogicMock.Object);
+            serviceCollection.AddSingleton<ILogger<StationLogic>>(factory => new Mock<ILogger<StationLogic>>().Object);
+            serviceCollection.AddScoped<IStationRepository>(factory => new Mock<IStationRepository>().Object);
+            serviceCollection.AddScoped<IFlightLogic>(logic => _flightLogicMock.Object);
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
             _slLogger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
-            _stationLogic = new StationLogic(_serviceProvider, _slLogger, _station);
+            _stationLogic = new StationLogic(_slLogger, _station);
             _flightLogicMock
                 .SetupGet(x => x.Flight)
                 .Returns(new Departure());
@@ -53,66 +47,61 @@ namespace Airport.Services.Tests
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task EnterStation_EnterToAnotherStation_ThrowsOperationCanceledException_Test()
         {
-            IStationLogic anotherStationLogic = new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 2 });
-            await _stationLogic.SetFlightAsync(_flightLogic, _cts);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => anotherStationLogic.SetFlightAsync(_flightLogic, _cts));
+            IStationLogic anotherStationLogic = new StationLogic(
+                _slLogger, 
+                new Station { StationId = new ObjectId("000000000000000000000002") });
+            await _stationLogic.SetFlight(_flightLogic, _cts);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => anotherStationLogic.SetFlight(_flightLogic, _cts));
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task EnterStation_FlightEntrance_CurrentFlightTypeHasValue_Test()
         {
             Assert.False(_stationLogic.CurrentFlightType.HasValue);
-            await _stationLogic.SetFlightAsync(_flightLogic);
+            await _stationLogic.SetFlight(_flightLogic);
             Assert.True(_stationLogic.CurrentFlightType.HasValue);
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task EnterStation_FlightEntrance_CurrentFlightIdHasValue_Test()
         {
             Assert.False(_stationLogic.CurrentFlightId.HasValue);
-            await _stationLogic.SetFlightAsync(_flightLogic);
+            await _stationLogic.SetFlight(_flightLogic);
             Assert.True(_stationLogic.CurrentFlightId.HasValue);
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         public async Task EnterStationEvent_FlightEntered_StationChangedEventRaised_Test()
         {
             _stationLogic.StationChanged += OnStationChanged;
-            await _stationLogic.SetFlightAsync(_flightLogic, _cts);
+            await _stationLogic.SetFlight(_flightLogic, _cts);
             Assert.True(_onStationChangedEventRaised);
             Assert.True(_countStationChangedRaised == 1);
             _stationLogic.StationChanged -= OnStationChanged;
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public async Task ClearAsync_FlightExited_StationEvacuated_Test()
+        public async Task Clear_FlightExited_StationEvacuated_Test()
         {
-            await _stationLogic.SetFlightAsync(_flightLogic, _cts);
+            await _stationLogic.SetFlight(_flightLogic, _cts);
             Assert.NotNull(_stationLogic.CurrentFlightId);
             Assert.NotNull(_stationLogic.CurrentFlightType);
-            await _stationLogic.ClearAsync();
+            await _stationLogic.Clear();
             Assert.Null(_stationLogic.CurrentFlightId);
             Assert.Null(_stationLogic.CurrentFlightType);
         }
 
         [Fact]
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
-        public async Task ClearAsync_ClearEmptyStation_ThrowsInvalidOperationException_Test()
+        public async Task Clear_ClearEmptyStation_ThrowsInvalidOperationException_Test()
         {
             Assert.Null(_stationLogic.CurrentFlightId);
             Assert.Null(_stationLogic.CurrentFlightType);
-            await Assert.ThrowsAsync<InvalidOperationException>(_stationLogic.ClearAsync);
+            await Assert.ThrowsAsync<InvalidOperationException>(_stationLogic.Clear);
         }
 
 
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
         private async Task OnStationChanged(object? sender, Models.EventArgs.StationChangedEventArgs args)
         {
             _onStationChangedEventRaised = true;

@@ -1,6 +1,8 @@
 ﻿using Airport.Models.Entities;
 using Airport.Models.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.Threading;
+using MongoDB.Bson;
 using System.Linq.Expressions;
 
 namespace Airport.Services.Providers
@@ -18,31 +20,46 @@ namespace Airport.Services.Providers
                 .ServiceProvider
                 .GetRequiredService<IStationRepository>();
             // Creates the station logics
-            _stations = new HashSet<IStationLogic>(stationRepository
-                .GetAll()
+            _stations = new HashSet<IStationLogic>(
+                new JoinableTaskFactory(new JoinableTaskContext())
+                .Run(stationRepository.GetAllAsync)
                 .Select(stationLogicFactory.CreateStationLogic));
         }
 
-        public IQueryable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate) => GetAll()
+        public IEnumerable<IStationLogic> FindBy(Expression<Func<IStationLogic, bool>> predicate) => GetAll()
+            .AsQueryable()
             .Where(predicate);
-        public IStationLogic? FindById(int id) => GetAll().FirstOrDefault(s => s.StationId == id);
-        public async Task<IEnumerable<IStationLogic>> FindByRouteId(int routeId)
+        public async Task<IEnumerable<IStationLogic>> FindByRouteIdAsync(ObjectId routeId)
+        {
+            using var stationRepository = _serviceProvider
+                .CreateAsyncScope()
+                .ServiceProvider
+                .GetRequiredService<IStationRepository>();
+            return (await stationRepository
+                .GetStationsByRouteIdAsync(routeId))
+                .Select(GetIStationLogic)
+                .ToList();
+        }
+        public async Task<IEnumerable<IStationLogic>> GetStationsByTargetAndRouteAsync(ObjectId stationLogicId, ObjectId routeId)
         {
             using var routeRepository = _serviceProvider
                 .CreateAsyncScope()
                 .ServiceProvider
                 .GetRequiredService<IRouteRepository>();
-            var route = await routeRepository.GetByIdAsync(routeId);
-            var stations = route.Directions?
-                .Select(d => d.StationFrom)
-                .Concat(
-                    route.Directions!.Select(d => d.StationTo))
-                .Distinct()
-                ?? Enumerable.Empty<Station>();
-            return stations.Any()
-                ? GetAll().Where(sl => stations.Any(s => s!.StationId == sl.StationId)).ToList()
-                : Enumerable.Empty<IStationLogic>();
+            return (await routeRepository
+                .GetRouteByIdAsync(routeId))
+                .Directions
+                .Where(d => d.To == stationLogicId)
+                .Select(d => GetIStationLogic(d.To));
         }
-        public IQueryable<IStationLogic> GetAll() => _stations.AsQueryable();
+        public IEnumerable<IStationLogic> GetAll() => _stations;
+
+        private IStationLogic GetIStationLogic(Station station) => station == null
+            ? throw new ArgumentNullException(nameof(station))
+            : _stations.FirstOrDefault(s => s.StationId == station.StationId)
+            ?? throw new ArgumentException("Station not found", nameof(station));
+        private IStationLogic GetIStationLogic(ObjectId stationId) =>
+            _stations.FirstOrDefault(s => s.StationId == stationId)
+            ?? throw new ArgumentException("Station not found", nameof(stationId));
     }
 }

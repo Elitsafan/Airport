@@ -1,6 +1,6 @@
 export class StationSummary {
   constructor(
-    public stationId: number,
+    public stationId: string,
     public entrance: Date,
     public exit: Date) { }
 }

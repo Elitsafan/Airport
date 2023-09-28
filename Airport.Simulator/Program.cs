@@ -1,4 +1,5 @@
 ﻿//#define TEST
+using Airport.Models.Helpers;
 using Airport.Models.Interfaces;
 using Airport.Services;
 using Airport.Services.Helpers;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
 using Polly.Retry;
@@ -15,36 +17,48 @@ namespace Airport.Simulator
     public class Program
     {
         private static ILogger<Program> _logger = null!;
+        private static IConfiguration Configuration { get; set; } = null!;
 
         public static async Task Main(params string[] args)
         {
             // Global exception handling
             AppDomain.CurrentDomain.UnhandledException += GlobalUnhandledExceptionHandler;
-            using IHost host = Host.CreateDefaultBuilder(args)
+            using var host = Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     config.SetBasePath(Environment.CurrentDirectory).AddJsonFile(
                         "appsettings.json",
                         optional: false,
                         reloadOnChange: true);
+                    Configuration = config.Build();
                 })
-                .ConfigureServices(services =>
+                .ConfigureServices(hostingContext =>
                 {
                     // Http client
-                    services.AddHttpClient<IFlightLauncherService, FlightLauncherService>()
-                    .AddPolicyHandler(GetRetryPolicy());
-                    services.AddScoped<IFlightGenerator, FlightGenerator>();
+                    hostingContext.AddHttpClient<IFlightLauncherService, FlightLauncherService>()
+                        .AddPolicyHandler(GetRetryPolicy());
+                    hostingContext.AddScoped<IFlightGenerator, FlightGenerator>();
+                    hostingContext.Configure<FlightEndPointsConfiguration>(
+                        Configuration.GetSection(nameof(FlightEndPointsConfiguration)));
+                    hostingContext.Configure<FlightTimeoutConfiguration>(
+                        Configuration.GetSection(nameof(FlightTimeoutConfiguration)));
+                    hostingContext.AddSingleton<IFlightEndPointsConfiguration>(
+                        provider => provider.GetRequiredService<IOptions<FlightEndPointsConfiguration>>().Value);
+                    hostingContext.AddSingleton<IFlightTimeoutConfiguration>(
+                        provider => provider.GetRequiredService<IOptions<FlightTimeoutConfiguration>>().Value);
                 })
                 .Build();
 
             _logger = host.Services.GetRequiredService<ILogger<Program>>();
             IFlightLauncherService flightLauncherService = host.Services.GetRequiredService<IFlightLauncherService>();
-            var startResponse = await flightLauncherService.StartAsync();
+            var startResponse = await flightLauncherService.Start();
 #if TEST
             await Console.Out.WriteLineAsync(startResponse.StatusCode.ToString());
-            await flightLauncherService.LaunchManyAsync(args); 
+            await flightLauncherService
+                .LaunchManyAsync(args)
+                .ToListAsync();
 #else
-            await flightLauncherService.SetFlightTimeoutAsync(TimeSpan.FromMilliseconds(1101)/*, Models.Enums.FlightType.Departure*/);
+            await flightLauncherService.SetFlightTimeout(/*Models.Enums.FlightType.Departure*/);
 #endif
             await host.RunAsync();
         }

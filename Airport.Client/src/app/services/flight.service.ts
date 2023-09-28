@@ -1,13 +1,11 @@
-import { Time } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { environment } from '../../environments/environment.development';
-import { Departure } from '../flight-module/models/departure.model.ts';
-import { Landing } from '../flight-module/models/landing.model.ts';
+import { Flight } from '../flight-module/models/flight.model.ts';
 import { IFlight } from '../interfaces/iflight.interface';
 import { Station } from '../station-module/models/station.model';
 import { AirportService } from './airport.service';
+import { ColorService } from './color.service';
 import { SignalrService } from './signalr.service';
 
 @Injectable({
@@ -15,23 +13,21 @@ import { SignalrService } from './signalr.service';
 })
 export class FlightService implements OnDestroy {
 
-  landings$?: Observable<Landing[]>;
-  departures$?: Observable<Departure[]>;
-  private departures: Departure[];
-  private landings: Landing[];
+  flights$?: Observable<Flight[]>;
+  private flights: Flight[];
   private startSubscription?: Subscription;
   private statusSubscription?: Subscription;
-  private departuresSubscription?: Subscription;
-  private landingsSubscription?: Subscription;
+  private flightsSubscription?: Subscription;
   private dataChangedSubscription?: Subscription;
-  private landingsSubject = new BehaviorSubject<Landing[]>([]);
-  private departuresSubject = new BehaviorSubject<Departure[]>([]);
+  private flightsSubject = new BehaviorSubject<Flight[]>([]);
 
-  constructor(private airportSvc: AirportService, private signalRSvc: SignalrService) {
-    this.landings = [];
-    this.departures = [];
-    this.landings$ = this.landingsSubject.asObservable();
-    this.departures$ = this.departuresSubject.asObservable();
+  constructor(
+    private airportSvc: AirportService,
+    private signalRSvc: SignalrService,
+    private colorSvc: ColorService
+  ) {
+    this.flights = [];
+    this.flights$ = this.flightsSubject.asObservable();
     this.startSubscription = this.airportSvc.start().subscribe({
       next: () => {
         this.statusSubscription = this.fetch()
@@ -39,32 +35,26 @@ export class FlightService implements OnDestroy {
         console.error(error);
       }
     });
-    this.dataChangedSubscription = this.signalRSvc.data$
+    this.dataChangedSubscription = this.signalRSvc.stationChangedData$
       ?.subscribe((data: Station[]) => {
-        data.forEach(s => {
+        data?.forEach(s => {
           const flight = this.flightResolver(s.flight);
-          // Departure
-          if (flight?.flightType === 'Departure') {
-            this.handleFlight(this.departuresSubject, flight, this.departures);
-            // Landing
-          } else if (flight?.flightType === 'Landing') {
-            this.handleFlight(this.landingsSubject, flight, this.landings);
-          }
+          if (flight)
+            this.handleFlight(flight);
         })
       })
   }
 
-  private handleFlight(subject: BehaviorSubject<any>, flight: IFlight, flights: IFlight[]) {
-    this.upsertFlight(flight, flights);
-    subject.next(flights);
+  private handleFlight(flight: IFlight) {
+    this.upsertFlight(flight, this.flights);
+    this.flightsSubject.next(this.flights);
   }
 
   ngOnDestroy(): void {
     this.startSubscription?.unsubscribe();
     this.statusSubscription?.unsubscribe();
     this.dataChangedSubscription?.unsubscribe();
-    this.departuresSubscription?.unsubscribe();
-    this.landingsSubscription?.unsubscribe();
+    this.flightsSubscription?.unsubscribe();
   }
 
   private upsertFlight(flight: IFlight, flights: IFlight[]) {
@@ -80,11 +70,25 @@ export class FlightService implements OnDestroy {
   private fetch() {
     return this.airportSvc.getStatus().subscribe({
       next: (airport) => {
-        this.landings = airport.landings.map(flight => new Landing(flight.flightId!, flight.stationId));
-        this.departures = airport.departures.map(flight => new Departure(flight.flightId!, flight.stationId));
+        // populates departures
+        this.flights = airport.departures.map(flight => new Flight(
+          flight.flightId!,
+          flight.stationId,
+          flight.flightType,
+          this.colorSvc.getColor(
+            flight.flightId,
+            flight.flightType)));
+        const landings = airport.landings.map(flight => new Flight(
+          flight.flightId!,
+          flight.stationId,
+          flight.flightType,
+          this.colorSvc.getColor(
+            flight.flightId,
+            flight.flightType)));
+        // adds landings
+        this.flights.push(...landings);
         // Triggers initial flights
-        this.departuresSubject.next(this.departures);
-        this.landingsSubject.next(this.landings);
+        this.flightsSubject.next(this.flights);
       },
       error: (error: HttpErrorResponse) => {
         console.log(error)
@@ -94,9 +98,11 @@ export class FlightService implements OnDestroy {
 
   private flightResolver(flight?: IFlight) {
     return flight
-      ? flight.flightType === 'Departure'
-        ? new Departure(flight.flightId, flight.stationId)
-        : new Landing(flight.flightId, flight.stationId)
+      ? new Flight(
+        flight.flightId,
+        flight.stationId,
+        flight.flightType,
+        this.colorSvc.getColor(flight.flightId, flight.flightType))
       : undefined;
   }
 }

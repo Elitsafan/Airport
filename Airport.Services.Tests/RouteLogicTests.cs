@@ -1,11 +1,4 @@
-﻿using Airport.Models.Entities;
-using Airport.Models.Interfaces;
-using Airport.Services.Logics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Moq;
-
-namespace Airport.Services.Tests
+﻿namespace Airport.Services.Tests
 {
     public class RouteLogicTests : IDisposable
     {
@@ -14,15 +7,15 @@ namespace Airport.Services.Tests
         private string _routeName;
         private IRouteLogic _routeLogic;
         private ILogger<StationLogic> _slLogger;
-        //private ILogger<DirectionLogic> _dlLogger;
-        private IStationLogic[] _stationLogics;
-        private IDirectionLogic[] _directionLogics;
+        private Mock<IDirectionLogic>[] _directionLogicMocks;
+        private Mock<IStationLogic>[] _stationLogicMocks;
         private Mock<IRouteRepository> _routeRepositoryMock;
         private Mock<IRouteLogicProvider> _routeLogicProviderMock;
         private Mock<IStationLogicProvider> _stationLogicProviderMock;
         private Mock<IDirectionLogicProvider> _directionLogicProviderMock;
         private Mock<ITrafficLightLogicProvider> _trafficLightLogicProviderMock;
-        private int _routeId;
+        private ObjectId[] _ids;
+        private ObjectId _routeId;
         #endregion
 
         public RouteLogicTests()
@@ -32,63 +25,84 @@ namespace Airport.Services.Tests
             _stationLogicProviderMock = new Mock<IStationLogicProvider>();
             _directionLogicProviderMock = new Mock<IDirectionLogicProvider>();
             _trafficLightLogicProviderMock = new Mock<ITrafficLightLogicProvider>();
+            _ids = new ObjectId[]
+            {
+                ObjectId.Parse("000000000000000000000001"),
+                ObjectId.Parse("000000000000000000000002"),
+                ObjectId.Parse("000000000000000000000003")
+            };
+            _routeId = new ObjectId("650abb1ee574435a814d7ec1");
+            _routeName = "Departure";
 
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
+            serviceCollection.AddSingleton<ILogger<StationLogic>>(factory => new Mock<ILogger<StationLogic>>().Object);
+            serviceCollection.AddSingleton<ILogger<IRouteLogic>>(factory => new Mock<ILogger<IRouteLogic>>().Object);
             serviceCollection.AddSingleton<IRouteLogicProvider>(factory => _routeLogicProviderMock.Object);
             serviceCollection.AddSingleton<IStationLogicProvider>(factory => _stationLogicProviderMock.Object);
             serviceCollection.AddSingleton<IDirectionLogicProvider>(factory => _directionLogicProviderMock.Object);
             serviceCollection.AddSingleton<ITrafficLightLogicProvider>(factory => _trafficLightLogicProviderMock.Object);
             serviceCollection.AddScoped<IRouteRepository>(factory => _routeRepositoryMock.Object);
-            //serviceCollection.AddScoped<IFlightLogic>((logic) => _flightLogicMock.Object);
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
-            _routeId = 2;
-            _routeName = "Departure";
             _slLogger = _serviceProvider.GetRequiredService<ILogger<StationLogic>>();
-            //_dlLogger = _serviceProvider.GetRequiredService<ILogger<DirectionLogic>>();
-            _stationLogics = new IStationLogic[]
+            // Stations
+            _stationLogicMocks = new Mock<IStationLogic>[]
             {
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 1 }),
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 2 }),
-                new StationLogic(_serviceProvider, _slLogger, new Station { StationId = 3 })
+                new Mock<IStationLogic>(),
+                new Mock<IStationLogic>(),
+                new Mock<IStationLogic>(),
             };
-            _directionLogics = new IDirectionLogic[]
-            {
-                new DirectionLogic(new Direction
-                {
-                    DirectionId = 1,
-                    From = 1,
-                    To = 2,
-                    RouteId = _routeId
-                }),
-                new DirectionLogic(new Direction
-                {
-                    DirectionId = 2,
-                    From = 2,
-                    To = 3,
-                    RouteId = _routeId
-                })
-            };
-            _routeRepositoryMock
+            _stationLogicMocks[0]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[0]);
+            _stationLogicMocks[1]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[1]);
+            _stationLogicMocks[2]
+                .SetupGet(x => x.StationId)
+                .Returns(_ids[2]);
+            _stationLogicProviderMock
                 .Setup(x => x.GetAll())
-                .Returns(() => new Route[]
+                .Returns(() => _stationLogicMocks.Select(sl => sl.Object));
+            // Directions
+            _directionLogicMocks = new Mock<IDirectionLogic>[]
+            {
+                new Mock<IDirectionLogic>(),
+                new Mock<IDirectionLogic>()
+            };
+            _directionLogicMocks[0]
+                .SetupGet(x => x.From)
+                .Returns(_ids[0]);
+            _directionLogicMocks[0]
+                .SetupGet(x => x.To)
+                .Returns(_ids[1]);
+            _directionLogicMocks[1]
+                .SetupGet(x => x.From)
+                .Returns(_ids[1]);
+            _directionLogicMocks[1]
+                .SetupGet(x => x.To)
+                .Returns(_ids[2]);
+            // RouteRepository
+            _routeRepositoryMock
+                .Setup(x => x.GetAllAsync())
+                .ReturnsAsync(() => new Route[]
                 {
                     new Route { RouteId = _routeId },
-                }.AsQueryable());
+                });
+            // Providers
             _stationLogicProviderMock
-                .Setup(x => x.FindByRouteId(_routeId))
-                .ReturnsAsync(() => _stationLogics);
+                .Setup(x => x.FindByRouteIdAsync(_routeId))
+                .ReturnsAsync(() => _stationLogicMocks.Select(sl => sl.Object));
             _directionLogicProviderMock
-                .Setup(x => x.FindByRouteId(_routeId))
-                .ReturnsAsync(() => _directionLogics);
+                .Setup(x => x.GetDirectionsByRouteIdAsync(_routeId))
+                .ReturnsAsync(() => _directionLogicMocks.Select(dl => dl.Object));
             _routeLogic = new RouteLogic(_routeId, _routeName, _serviceProvider);
             _routeLogicProviderMock
                 .Setup(x => x.DepartureRoutes)
                 .Returns(() => new IRouteLogic[]
                 {
                     _routeLogic
-                }.AsEnumerable());
+                });
         }
 
         [Fact]
@@ -97,19 +111,19 @@ namespace Airport.Services.Tests
         public void RouteName_WhenCalled_ReturnsSetValue_Test() => Assert.True(_routeLogic.RouteName == _routeName);
         [Fact]
         public void GetStartStations_WhenCalled_ReturnsFirstStation_Test() =>
-            Assert.Equal(new IStationLogic[] { _stationLogics[0] }, _routeLogic.GetStartStations().ToList());
+            Assert.Equal(new IStationLogic[] { _stationLogicMocks[0].Object }, _routeLogic.GetStartStations().ToArray());
         [Fact]
-        public void GetNextStationsOf_WhenCalledWithNullParam_ThrowsArgumentNullException_Test() => 
+        public void GetNextStationsOf_WhenCalledWithNullParam_ThrowsArgumentNullException_Test() =>
             Assert.Throws<ArgumentNullException>(() => _routeLogic.GetNextStationsOf(null!));
         [Fact]
         public void GetNextStationsOf_WhenCalledWithUnknownStation_ThrowsArgumentException_Test()
         {
-            var unknown = new StationLogic(_serviceProvider, _slLogger, new Station());
+            var unknown = new StationLogic(_slLogger, new Station());
             Assert.Throws<ArgumentException>(() => _routeLogic.GetNextStationsOf(unknown));
         }
         [Fact]
         public void GetNextStationsOf_WhenCalled_ReturnsNextStations_Test() =>
-            Assert.Equal(new IStationLogic[] { _stationLogics[1] }, _routeLogic.GetNextStationsOf(_stationLogics[0]));
+            Assert.Equal(new IStationLogic[] { _stationLogicMocks[1].Object }, _routeLogic.GetNextStationsOf(_stationLogicMocks[0].Object).ToArray());
 
         public void Dispose() => _serviceProvider.Dispose();
     }

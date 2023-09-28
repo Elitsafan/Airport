@@ -21,16 +21,17 @@ namespace Airport.Services
             if (flight is null)
                 throw new ArgumentNullException(nameof(flight));
             var flightLogic = _flightLogicFactory.Create(flight);
-            flightLogic.FlightRunDone += OnFlightRunDoneAsync;
+            flightLogic.FlightRunDone += OnFlightRunDone;
             // Starts the run
-            _ = flightLogic.RunAsync();
+            _ = flightLogic.Run();
         }
+
         // A handler to end a flight's run
-        private Task OnFlightRunDoneAsync(object? sender, FlightRunDoneEventArgs e)
+        private async Task OnFlightRunDone(object? sender, FlightRunDoneEventArgs e)
         {
-            e.FlightDone.FlightRunDone -= OnFlightRunDoneAsync;
+            e.FlightDone.FlightRunDone -= OnFlightRunDone;
             e.FlightDone.Dispose();
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Airport.Models.Entities;
 using Airport.Models.EventArgs;
 using Microsoft.VisualStudio.Threading;
-using System.Diagnostics.CodeAnalysis;
+using MongoDB.Bson;
 
 namespace Airport.Models.Interfaces
 {
@@ -19,12 +19,13 @@ namespace Airport.Models.Interfaces
         /// The current <see cref="IStationLogic"/> that holds the <see cref="Flight"/>
         /// </summary>
         IStationLogic? CurrentStation { get; }
-        int RouteId { get; }
-        [SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "<Pending>")]
+        ObjectId RouteId { get; }
         Task ThrowIfCancellationRequested(CancellationTokenSource? source);
         /// <summary>
         /// Runs the current instance
         /// </summary>
-        Task RunAsync();
+        Task Run();
+        void OccupyStation(ObjectId stationId, DateTime entranceTime);
+        void UnoccupyStation(ObjectId stationId, DateTime exitTime);
     }
 }

@@ -2,6 +2,7 @@
 using Airport.Models.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Threading;
 
 namespace Airport.Services.Providers
 {
@@ -27,8 +28,8 @@ namespace Airport.Services.Providers
                 .ServiceProvider
                 .GetRequiredService<IRouteRepository>();
             // Creates route logics
-            var routeLogics = routeRepository
-                .GetAll()
+            var routeLogics = new JoinableTaskFactory(new JoinableTaskContext())
+                .Run(routeRepository.GetAllAsync)
                 .Select(r => routeLogicFactory
                     .GetCreator(r.RouteId, r.RouteName)
                     .Create())
@@ -43,6 +44,7 @@ namespace Airport.Services.Providers
         #region Properties
         public IEnumerable<IRouteLogic> LandingRoutes { get; private set; }
         public IEnumerable<IRouteLogic> DepartureRoutes { get; private set; }
+        public IEnumerable<IRouteLogic> AllRoutes => LandingRoutes.Concat(DepartureRoutes);
         #endregion
     }
 }

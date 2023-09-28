@@ -1,16 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Airport.Models.Entities
 {
-    [Table("TrafficLights")]
     public class TrafficLight
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int TrafficLightId { get; set; }
-        [Required]
-        public int? StationId { get; set; }
-        public virtual Station? Station { get; set; }
-        public virtual ICollection<Route>? Routes { get; set; } = new HashSet<Route>();
+        [BsonId]
+        public ObjectId TrafficLightId { get; set; }
+        [BsonRequired]
+        [BsonElement("station_id")]
+        public ObjectId StationId { get; set; }
     }
 }

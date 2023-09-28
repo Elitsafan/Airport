@@ -2,7 +2,7 @@
   "profiles": {
     "Airport.Simulator": {
       "commandName": "Project",
-      "commandLineArgs": "132 exit"
+      "commandLineArgs": "10 exit"
     }
   }
 }
